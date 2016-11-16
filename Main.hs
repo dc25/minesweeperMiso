@@ -15,13 +15,13 @@ data Board = Board { board :: (Map (Int,Int) Cell) }
 data Cmd = Pick (Int, Int)
 
 width :: Int
-width =  8
+width =  20
 
 height :: Int
-height =  6
+height =  16
 
 cellSize :: Int
-cellSize = 50
+cellSize = 30
 
 update :: Cmd -> Board -> Board
 update (Pick (x,y)) b = b
