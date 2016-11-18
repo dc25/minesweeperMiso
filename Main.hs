@@ -51,7 +51,7 @@ getColor (Cell hasBomb exposed flagged) =
         (True,_,_) -> "black"
         (False,_,_) -> "grey"
 
-cellAttrs :: (Int, Int) -> Cell -> Map Text Text
+cellAttrs :: Pos -> Cell -> Map Text Text
 cellAttrs (x,y) cell = do
     let size = 0.9
         placement = 0.5 - size / 2.0
@@ -64,7 +64,7 @@ cellAttrs (x,y) cell = do
              , ("oncontextmenu", "return false;")
              ] 
 
-showCell :: MonadWidget t m => (Int, Int) -> Cell -> m (Event t Cmd)
+showCell :: MonadWidget t m => Pos -> Cell -> m (Event t Cmd)
 showCell pos c = do
     let dCellAttrs = constDyn (cellAttrs pos c) 
     (el,_) <- elDynAttrNS' svgns "rect" dCellAttrs $ return ()
@@ -72,7 +72,7 @@ showCell pos c = do
         rEv = const (LeftPick pos c) <$> domEvent Click el
     return $ leftmost [lEv, rEv]
 
-reactToPick :: Cmd -> Map (Int, Int) (Maybe Cell)
+reactToPick :: Cmd -> Map Pos (Maybe Cell)
 reactToPick (LeftPick pos c) = pos =: Just c {exposed=True} 
 reactToPick (RightPick pos c) = pos =: Just c {flagged=not $ flagged c} 
 
@@ -89,7 +89,7 @@ main = mainWidget $ do
     let (initialBoard, _)  = runRand mkBoard gen
     rec 
         let pick = switch $ (leftmost . elems) <$> current ev
-            updates = fmap reactToPick pick
-        (_, ev) <- elDynAttrNS' svgns "svg" (constDyn boardAttrs) $ listHoldWithKey initialBoard updates showCell
+            updateEv = fmap reactToPick pick
+        (_, ev) <- elDynAttrNS' svgns "svg" (constDyn boardAttrs) $ listHoldWithKey initialBoard updateEv showCell
 
     return ()
