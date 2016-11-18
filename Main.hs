@@ -45,14 +45,9 @@ cellToAttrs (x,y) = do
 showCell :: MonadWidget t m => (Int, Int) -> Cell -> m (Event t Cmd)
 showCell pos c = do
     let dCellAttrs = constDyn (cellToAttrs pos) 
-
     (el,_) <- elStopPropagationNS svgns "g" Mousedown $ 
                  elDynAttrNS' svgns "rect" dCellAttrs $ return ()
-
-    let domEv = domEvent Mousedown el
-        pickEv = fmap (\_ -> Pick pos c) domEv
-
-    return pickEv
+    return $ fmap (const $ Pick pos c) $ domEvent Mousedown el 
 
 main :: IO ()
 main = mainWidget $ do
@@ -69,8 +64,7 @@ main = mainWidget $ do
         cellMap = board initialBoard
     rec 
         let pick = switch $ (leftmost . elems) <$> current ev
-            removal = \(Pick pos c) -> (pos =: Nothing)
-            removeEv = fmap removal pick
+            removeEv = fmap (\(Pick pos c) -> (pos =: Nothing)) pick
         (_, ev) <- elDynAttrNS' svgns "svg" attrs $ listHoldWithKey cellMap removeEv showCell
 
     return ()
