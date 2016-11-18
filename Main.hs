@@ -20,13 +20,13 @@ data Cmd =   LeftPick  Pos Cell
            | RightPick Pos Cell 
 
 width :: Int
-width =  40
+width =  30
 
 height :: Int
-height =  30
+height =  20
 
 cellSize :: Int
-cellSize = 24
+cellSize = 30
 
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
@@ -50,23 +50,52 @@ getColor (Cell hasBomb exposed flagged) =
 cellAttrs :: Pos -> Cell -> Map Text Text
 cellAttrs (x,y) cell = do
     let size = 0.9
+        placement = 0.5 - (size/2.0)
+
+    fromList [ ( "x",            pack $ show placement)
+             , ( "y",            pack $ show placement)
+             , ( "width",        pack $ show size)
+             , ( "height",       pack $ show size)
+             , ( "style",        pack $ "fill:" ++ getColor cell)
+             , ("oncontextmenu", "return false;")
+             ] 
+
+textAttrs :: Pos -> Cell -> Map Text Text
+textAttrs (x,y) cell = do
+    let size = 0.9
         placement = 0.5 - size / 2.0
 
-    fromList [ ( "x", pack $ show $ fromIntegral x+placement)
-             , ( "y", pack $ show $ fromIntegral y+placement)
-             , ( "width",  pack $ show size)
-             , ( "height",  pack $ show size)
-             , ( "style",  pack $ "fill:" ++ getColor cell)
+    fromList [ ( "x",            pack $ show placement)
+             , ( "y",            pack $ show (1.0 - placement))
+             , ("font-family",   "Verdana")
+             , ("font-size",     "1" )
+             , ("fill",          "blue" )
              , ("oncontextmenu", "return false;")
+             ] 
+
+groupAttrs :: Pos -> Cell -> Map Text Text
+groupAttrs (x,y) cell = do
+    let hUnit = 1.0/fromIntegral width
+        vUnit = 1.0/fromIntegral height
+
+    fromList [ 
+              ("transform", pack $ 
+                   "translate (" ++ show x ++ ", " ++ show y ++ ") " 
+              )
              ] 
 
 showCell :: MonadWidget t m => Pos -> Cell -> m (Event t Cmd)
 showCell pos c = do
     let dCellAttrs = constDyn (cellAttrs pos c) 
-    (el,_) <- elSvgns "rect" dCellAttrs $ return ()
-    let lEv = const (RightPick pos c) <$> domEvent Contextmenu el
-        rEv = const (LeftPick pos c) <$> domEvent Click el
-    return $ leftmost [lEv, rEv]
+        dTextAttrs = constDyn (textAttrs pos c) 
+        dGroupAttrs = constDyn (groupAttrs pos c) 
+    (_,ev) <- elSvgns "g" dGroupAttrs $ do
+                  (el,_) <- elSvgns "rect" dCellAttrs $ return ()
+                  (_,_) <- elSvgns "text" dTextAttrs $ do text "8" ; return ()
+                  let lEv = const (RightPick pos c) <$> domEvent Contextmenu el
+                      rEv = const (LeftPick pos c) <$> domEvent Click el
+                  return $ leftmost [lEv, rEv]
+    return ev
 
 reactToPick :: Cmd -> Map Pos (Maybe Cell)
 reactToPick (LeftPick pos c) = pos =: Just c {exposed=True} 
@@ -75,7 +104,7 @@ reactToPick (RightPick pos c) = pos =: Just c {flagged=not $ flagged c}
 boardAttrs = fromList 
                  [ ("width" , pack $ show (width*cellSize))
                  , ("height", pack $ show (height*cellSize))
-                 , ("viewBox", pack ("0 0 " ++ show width ++ " " ++ show height))
+                 , ("viewBox", pack $ "0 0 " ++ show width ++ " " ++ show height)
                  , ("style" , "border:solid; margin:8em")
                  , ("oncontextmenu", "return false;")
                  ]
