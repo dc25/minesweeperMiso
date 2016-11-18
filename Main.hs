@@ -33,15 +33,14 @@ cellSize = 24
 
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
-    t <- getRandomR (0.0::Float, 1.0::Float)
-    return $ Cell (t < (0.2::Float)) False False
+    t <- getRandomR (0.0::Float, 1.0)
+    return $ Cell (t < 0.2) False False
 
 mkBoard :: RandomGen g => Rand g Board
 mkBoard = do
+    let positions = [(x,y) | x <- [0..width-1], y <- [0..height-1]]
     cells <- sequence $ repeat mkCell
-    return $ 
-        fromList $ 
-        zip [(x,y) | x <- [0..width-1], y <- [0..height-1]] cells 
+    return $ fromList $ zip positions cells 
 
 getColor :: Cell -> String
 getColor (Cell hasBomb exposed flagged) = 
