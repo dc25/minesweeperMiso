@@ -3,12 +3,12 @@
 
 import Reflex
 import Reflex.Dom
-import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen)
+import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
 import Data.Map (Map, fromList, elems)
 import Data.Text (Text, pack)
 
-data Cell = Cell Int
+data Cell = Cell { hasBomb :: Bool }
 
 data Board = Board { board :: (Map (Int,Int) Cell) }
 
@@ -26,13 +26,19 @@ cellSize = 20
 update :: Cmd -> Board -> Board
 update (Pick (x,y) c) b = b
 
+mkCell :: RandomGen g => Rand g Cell
+mkCell = do
+    t <- getRandomR (0.0::Float, 1.0::Float)
+    return $ Cell (t < (0.2::Float))
+
+
 mkBoard :: RandomGen g => Rand g Board
 mkBoard = do
-    let cells = [((x,y),Cell 1) | x <- [0..width-1], y <- [0..height-1]]
-    return $ Board $ fromList cells
+    randomCells <- sequence $ repeat mkCell
+    return $ Board $ fromList $ zip [(x,y) | x <- [0..width-1], y <- [0..height-1]] randomCells 
 
-cellToAttrs :: (Int, Int) -> Map Text Text
-cellToAttrs (x,y) = do
+cellToAttrs :: (Int, Int) -> Cell -> Map Text Text
+cellToAttrs (x,y) (Cell hasBomb) = do
     let size = 0.9
         placement = 0.5 - size / 2.0
 
@@ -40,11 +46,12 @@ cellToAttrs (x,y) = do
              , ( "y", pack $ show $ fromIntegral y+placement)
              , ( "width",  pack $ show $ size)
              , ( "height",  pack $ show $ size)
+             , ( "style",  pack $ "fill:" ++ if hasBomb then "red" else "green")
              ] 
 
 showCell :: MonadWidget t m => (Int, Int) -> Cell -> m (Event t Cmd)
 showCell pos c = do
-    let dCellAttrs = constDyn (cellToAttrs pos) 
+    let dCellAttrs = constDyn (cellToAttrs pos c) 
     (el,_) <- elStopPropagationNS svgns "g" Mousedown $ 
                  elDynAttrNS' svgns "rect" dCellAttrs $ return ()
     return $ fmap (const $ Pick pos c) $ domEvent Mousedown el 
