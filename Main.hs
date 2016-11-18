@@ -8,9 +8,6 @@ import Control.Monad.Trans (liftIO)
 import Data.Map (Map, fromList, elems)
 import Data.Text (Text, pack)
 
-svgns :: Maybe Text
-svgns = Just "http://www.w3.org/2000/svg"
-
 data Cell = Cell { hasBomb :: Bool 
                  , exposed :: Bool
                  , flagged :: Bool
@@ -66,7 +63,7 @@ cellAttrs (x,y) cell = do
 showCell :: MonadWidget t m => Pos -> Cell -> m (Event t Cmd)
 showCell pos c = do
     let dCellAttrs = constDyn (cellAttrs pos c) 
-    (el,_) <- elDynAttrNS' svgns "rect" dCellAttrs $ return ()
+    (el,_) <- elSvgns "rect" dCellAttrs $ return ()
     let lEv = const (RightPick pos c) <$> domEvent Contextmenu el
         rEv = const (LeftPick pos c) <$> domEvent Click el
     return $ leftmost [lEv, rEv]
@@ -89,6 +86,10 @@ main = mainWidget $ do
     rec 
         let pick = switch $ (leftmost . elems) <$> current ev
             updateEv = fmap reactToPick pick
-        (_, ev) <- elDynAttrNS' svgns "svg" (constDyn boardAttrs) $ listHoldWithKey initialBoard updateEv showCell
+        (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ listHoldWithKey initialBoard updateEv showCell
 
     return ()
+
+-- At end to avoid Rosetta Code unmatched quotes problem.
+elSvgns :: MonadWidget t m => Text -> Dynamic t (Map Text Text) -> m a -> m (El t, a)
+elSvgns = elDynAttrNS' (Just "http://www.w3.org/2000/svg")
