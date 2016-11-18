@@ -19,7 +19,8 @@ data Cell = Cell { hasBomb :: Bool
 type Pos = (Int, Int)
 type Board = Map Pos Cell
 
-data Cmd = LeftPick Pos Cell | RightPick Pos Cell 
+data Cmd =   LeftPick  Pos Cell 
+           | RightPick Pos Cell 
 
 width :: Int
 width =  40
@@ -29,9 +30,6 @@ height =  30
 
 cellSize :: Int
 cellSize = 24
-
-update :: Cmd -> Board -> Board
-update (LeftPick (x,y) c) b = b
 
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
@@ -53,8 +51,8 @@ getColor (Cell hasBomb exposed flagged) =
         (True,_,_) -> "black"
         (False,_,_) -> "grey"
 
-cellToAttrs :: (Int, Int) -> Cell -> Map Text Text
-cellToAttrs (x,y) cell = do
+cellAttrs :: (Int, Int) -> Cell -> Map Text Text
+cellAttrs (x,y) cell = do
     let size = 0.9
         placement = 0.5 - size / 2.0
 
@@ -68,7 +66,7 @@ cellToAttrs (x,y) cell = do
 
 showCell :: MonadWidget t m => (Int, Int) -> Cell -> m (Event t Cmd)
 showCell pos c = do
-    let dCellAttrs = constDyn (cellToAttrs pos c) 
+    let dCellAttrs = constDyn (cellAttrs pos c) 
     (el,_) <- elDynAttrNS' svgns "rect" dCellAttrs $ return ()
     let lEv = const (RightPick pos c) <$> domEvent Contextmenu el
         rEv = const (LeftPick pos c) <$> domEvent Click el
@@ -95,4 +93,3 @@ main = mainWidget $ do
         (_, ev) <- elDynAttrNS' svgns "svg" (constDyn boardAttrs) $ listHoldWithKey initialBoard updates showCell
 
     return ()
-
