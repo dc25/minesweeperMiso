@@ -8,7 +8,10 @@ import Control.Monad.Trans (liftIO)
 import Data.Map (Map, fromList, elems)
 import Data.Text (Text, pack)
 
-data Cell = Cell { hasBomb :: Bool }
+data Cell = Cell { hasBomb :: Bool 
+                 , exposed :: Bool
+                 , flagged :: Bool
+                 }
 
 data Board = Board { board :: (Map (Int,Int) Cell) }
 
@@ -29,16 +32,18 @@ update (Pick (x,y) c) b = b
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
     t <- getRandomR (0.0::Float, 1.0::Float)
-    return $ Cell (t < (0.2::Float))
-
+    return $ Cell (t < (0.2::Float)) False False
 
 mkBoard :: RandomGen g => Rand g Board
 mkBoard = do
-    randomCells <- sequence $ repeat mkCell
-    return $ Board $ fromList $ zip [(x,y) | x <- [0..width-1], y <- [0..height-1]] randomCells 
+    cells <- sequence $ repeat mkCell
+    return $ 
+        Board $ 
+        fromList $ 
+        zip [(x,y) | x <- [0..width-1], y <- [0..height-1]] cells 
 
 cellToAttrs :: (Int, Int) -> Cell -> Map Text Text
-cellToAttrs (x,y) (Cell hasBomb) = do
+cellToAttrs (x,y) (Cell hasBomb _ _) = do
     let size = 0.9
         placement = 0.5 - size / 2.0
 
