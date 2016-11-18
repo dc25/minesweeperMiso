@@ -46,10 +46,10 @@ mkBoard = do
 getColor :: Cell -> String
 getColor (Cell hasBomb exposed flagged) = 
     case (hasBomb, exposed, flagged) of
-        (_,_,True) -> "red"
-        (_,False,_) -> "green"
-        (True,_,_) -> "black"
-        (False,_,_) -> "grey"
+         (      _,       _,    True) -> "red"
+         (      _,   False,       _) -> "green"
+         (  True ,       _,       _) -> "black"
+         (  False,       _,       _) -> "grey"
 
 cellAttrs :: Pos -> Cell -> Map Text Text
 cellAttrs (x,y) cell = do
