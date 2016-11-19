@@ -20,13 +20,13 @@ data Cmd =   LeftPick  Pos Cell
            | RightPick Pos Cell 
 
 width :: Int
-width =  30
+width =  25
 
 height :: Int
-height =  20
+height =  15
 
 cellSize :: Int
-cellSize = 20
+cellSize = 30
 
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
@@ -67,8 +67,8 @@ textAttrs =
              , ("font-size",     "1.0" )
              , ("fill",          "blue" )
              , ("alignment-baseline", "middle" )
-             , ("text-anchor", "middle" )
-             , ("oncontextmenu", "return false;")
+             , ("text-anchor",        "middle" )
+             , ("oncontextmenu",      "return false;")
              ] 
 
 groupAttrs :: Pos -> Map Text Text
@@ -87,10 +87,10 @@ showCell pos c = do
     (_,ev) <- elSvgns "g" dGroupAttrs $ do
                   (rEl,_) <- elSvgns "rect" dCellAttrs $ return ()
                   (tEl,_) <- elSvgns "text" dTextAttrs $ do text "1" ; return ()
-                  let r_rEv = const (RightPick pos c) <$>  domEvent Contextmenu rEl
-                      l_rEv = const (LeftPick  pos c) <$>  domEvent Click       rEl
-                      r_tEv = const (RightPick pos c) <$>  domEvent Contextmenu tEl
-                      l_tEv = const (LeftPick  pos c) <$>  domEvent Click       tEl
+                  let r_rEv = RightPick pos c <$ domEvent Contextmenu rEl
+                      l_rEv = LeftPick  pos c <$ domEvent Click       rEl
+                      r_tEv = RightPick pos c <$ domEvent Contextmenu tEl
+                      l_tEv = LeftPick  pos c <$ domEvent Click       tEl
                   return $ leftmost [l_rEv, r_rEv, l_tEv, r_tEv]
     return ev
 
