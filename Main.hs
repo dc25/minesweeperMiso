@@ -5,7 +5,8 @@ import Reflex
 import Reflex.Dom
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
-import Data.Map (Map, fromList, elems)
+import Data.Map (Map, fromList, elems, lookup)
+import Data.Maybe (catMaybes)
 import Data.Text (Text, pack)
 
 data Cell = Cell { hasBomb :: Bool 
@@ -79,19 +80,39 @@ groupAttrs (x,y) =
                )
              ] 
 
-showCell :: MonadWidget t m => Pos -> Cell -> m (Event t Cmd)
-showCell pos c = do
-    let dCellAttrs = constDyn $ cellAttrs c 
-        dTextAttrs = constDyn textAttrs 
-        dGroupAttrs = constDyn $ groupAttrs pos
-    (_,ev) <- elSvgns "g" dGroupAttrs $ do
-                  (rEl,_) <- elSvgns "rect" dCellAttrs $ return ()
-                  (tEl,_) <- elSvgns "text" dTextAttrs $ do text "1" ; return ()
+bombCount :: Board -> Pos -> Int
+bombCount board (x,y)  = 
+    let localIndices = [(xx,yy) | xx <- [x-1..x+1], yy <- [y-1..y+1]]
+        localCells = catMaybes $ (fmap (\p -> Data.Map.lookup p board) localIndices)
+        localBombs = filter hasBomb localCells
+    in length localBombs
+
+showCell :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Cmd)
+showCell board pos c@(Cell _ True _) = do
+    (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
+                  let count = bombCount board pos
+
+                  (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
+                  (tEl,_) <- elSvgns "text" (constDyn textAttrs) $ text $ pack $ show count
+
                   let r_rEv = RightPick pos c <$ domEvent Contextmenu rEl
                       l_rEv = LeftPick  pos c <$ domEvent Click       rEl
+
                       r_tEv = RightPick pos c <$ domEvent Contextmenu tEl
                       l_tEv = LeftPick  pos c <$ domEvent Click       tEl
+
                   return $ leftmost [l_rEv, r_rEv, l_tEv, r_tEv]
+    return ev
+
+showCell board pos c@(Cell _ False _) = do
+    (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
+
+                  (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
+
+                  let r_rEv = RightPick pos c <$ domEvent Contextmenu rEl
+                      l_rEv = LeftPick  pos c <$ domEvent Click       rEl
+
+                  return $ leftmost [l_rEv, r_rEv]
     return ev
 
 reactToPick :: Cmd -> Map Pos (Maybe Cell)
@@ -111,7 +132,7 @@ main = mainWidget $ do
     rec 
         let pick = switch $ (leftmost . elems) <$> current ev
             updateEv = fmap reactToPick pick
-        (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ listHoldWithKey initialBoard updateEv showCell
+        (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ listHoldWithKey initialBoard updateEv (showCell initialBoard)
 
     return ()
 
