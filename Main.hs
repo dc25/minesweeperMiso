@@ -26,7 +26,7 @@ height :: Int
 height =  20
 
 cellSize :: Int
-cellSize = 30
+cellSize = 20
 
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
@@ -47,54 +47,51 @@ getColor (Cell hasBomb exposed flagged) =
          (  True ,       _,       _) -> "black"
          (  False,       _,       _) -> "grey"
 
-cellAttrs :: Pos -> Cell -> Map Text Text
-cellAttrs (x,y) cell = do
+cellAttrs :: Cell -> Map Text Text
+cellAttrs cell = 
     let size = 0.9
         placement = 0.5 - (size/2.0)
 
-    fromList [ ( "x",            pack $ show placement)
-             , ( "y",            pack $ show placement)
-             , ( "width",        pack $ show size)
-             , ( "height",       pack $ show size)
-             , ( "style",        pack $ "fill:" ++ getColor cell)
-             , ("oncontextmenu", "return false;")
-             ] 
+    in fromList [ ( "x",            pack $ show placement)
+                , ( "y",            pack $ show placement)
+                , ( "width",        pack $ show size)
+                , ( "height",       pack $ show size)
+                , ( "style",        pack $ "fill:" ++ getColor cell)
+                , ("oncontextmenu", "return false;")
+                ] 
 
-textAttrs :: Pos -> Cell -> Map Text Text
-textAttrs (x,y) cell = do
-    let size = 0.9
-        placement = 0.5 - size / 2.0
-
-    fromList [ ( "x",            pack $ show placement)
-             , ( "y",            pack $ show (1.0 - placement))
-             , ("font-family",   "Verdana")
-             , ("font-size",     "1" )
+textAttrs :: Map Text Text
+textAttrs = 
+    fromList [ ( "x",            "0.5")
+             , ( "y",            "0.6")
+             , ("font-size",     "1.0" )
              , ("fill",          "blue" )
+             , ("alignment-baseline", "middle" )
+             , ("text-anchor", "middle" )
              , ("oncontextmenu", "return false;")
              ] 
 
-groupAttrs :: Pos -> Cell -> Map Text Text
-groupAttrs (x,y) cell = do
-    let hUnit = 1.0/fromIntegral width
-        vUnit = 1.0/fromIntegral height
-
-    fromList [ 
-              ("transform", pack $ 
-                   "translate (" ++ show x ++ ", " ++ show y ++ ") " 
-              )
+groupAttrs :: Pos -> Map Text Text
+groupAttrs (x,y) = 
+    fromList [ ("transform", 
+                pack $    "scale (" ++ show cellSize ++ ", " ++ show cellSize ++ ") " 
+                       ++ "translate (" ++ show x ++ ", " ++ show y ++ ")" 
+               )
              ] 
 
 showCell :: MonadWidget t m => Pos -> Cell -> m (Event t Cmd)
 showCell pos c = do
-    let dCellAttrs = constDyn (cellAttrs pos c) 
-        dTextAttrs = constDyn (textAttrs pos c) 
-        dGroupAttrs = constDyn (groupAttrs pos c) 
+    let dCellAttrs = constDyn $ cellAttrs c 
+        dTextAttrs = constDyn textAttrs 
+        dGroupAttrs = constDyn $ groupAttrs pos
     (_,ev) <- elSvgns "g" dGroupAttrs $ do
-                  (el,_) <- elSvgns "rect" dCellAttrs $ return ()
-                  (_,_) <- elSvgns "text" dTextAttrs $ do text "8" ; return ()
-                  let lEv = const (RightPick pos c) <$> domEvent Contextmenu el
-                      rEv = const (LeftPick pos c) <$> domEvent Click el
-                  return $ leftmost [lEv, rEv]
+                  (rEl,_) <- elSvgns "rect" dCellAttrs $ return ()
+                  (tEl,_) <- elSvgns "text" dTextAttrs $ do text "1" ; return ()
+                  let r_rEv = const (RightPick pos c) <$>  domEvent Contextmenu rEl
+                      l_rEv = const (LeftPick  pos c) <$>  domEvent Click       rEl
+                      r_tEv = const (RightPick pos c) <$>  domEvent Contextmenu tEl
+                      l_tEv = const (LeftPick  pos c) <$>  domEvent Click       tEl
+                  return $ leftmost [l_rEv, r_rEv, l_tEv, r_tEv]
     return ev
 
 reactToPick :: Cmd -> Map Pos (Maybe Cell)
@@ -102,9 +99,8 @@ reactToPick (LeftPick pos c) = pos =: Just c {exposed=True}
 reactToPick (RightPick pos c) = pos =: Just c {flagged=not $ flagged c} 
 
 boardAttrs = fromList 
-                 [ ("width" , pack $ show (width*cellSize))
-                 , ("height", pack $ show (height*cellSize))
-                 , ("viewBox", pack $ "0 0 " ++ show width ++ " " ++ show height)
+                 [ ("width" , pack $ show $ width * cellSize)
+                 , ("height", pack $ show $ height * cellSize)
                  , ("style" , "border:solid; margin:8em")
                  , ("oncontextmenu", "return false;")
                  ]
