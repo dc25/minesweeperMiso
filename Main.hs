@@ -3,9 +3,11 @@
 
 import Reflex
 import Reflex.Dom
+import Debug.Trace
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
-import Data.Map (Map, fromList, elems, lookup)
+import Control.Monad.State 
+import Data.Map (Map, fromList, elems, lookup, insert, (!))
 import Data.Maybe (catMaybes)
 import Data.Text (Text, pack)
 
@@ -131,8 +133,35 @@ fromLeftPick board (x,y) c =
 
     in [((x,y), Just c {exposed=True})] ++ if count == 0 then (zip localIndices $ fmap setExposed localMaybeCells) else []
 
+fromLeftPickM :: Pos -> State Board [(Pos, Maybe Cell)]
+fromLeftPickM (x,y) = do
+    let setter = 
+            \board ->
+                let indices = [(xx,yy) | xx <- [x-1..x+1]
+                                       , yy <- [y-1..y+1]
+                                       , (xx,yy) /= (x,y)
+                                       , xx >= 0, yy >= 0
+                                       , xx < width, yy < height]
+
+                    cells = (fmap (\i -> board ! trace ("floc" ++ show i) i) indices)
+                    bombs = filter hasBomb cells
+                    count = length bombs
+                    c = board ! trace ("loc"++show (x,y))  (x,y)
+                    updatedCell = c {exposed=True}
+                    updatedBoard = if (not $ exposed c) then insert (x,y) updatedCell board else board
+                    neighborUpdater = mapM fromLeftPickM (if (not $ exposed c) && count == 0 then indices else [] )
+                    (updatedNeighbors, updatedNeighborsBoard) = runState neighborUpdater updatedBoard
+
+                    
+
+                in ([((x,y), Just updatedCell)] ++ concat updatedNeighbors, updatedNeighborsBoard)
+    state setter
+
 fromPick :: Board -> Cmd -> [(Pos, Maybe Cell)]
-fromPick board (LeftPick p c) = fromLeftPick board p c
+-- fromPick board (LeftPick p c) = fromLeftPick board p c        
+fromPick board (LeftPick p c) = 
+    let (nc,_) = runState (fromLeftPickM p) board
+    in nc
 
 fromPick _ (RightPick pos c) = [(pos, Just c {flagged=not $ flagged c})]
 
