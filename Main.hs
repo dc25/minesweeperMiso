@@ -3,11 +3,10 @@
 
 import Reflex
 import Reflex.Dom
-import Debug.Trace
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State 
-import Data.Map (Map, fromList, elems, lookup, insert, (!))
+import Data.Map as DM (Map, fromList, elems, lookup, insert, (!))
 import Data.Maybe (catMaybes)
 import Data.Text (Text, pack)
 
@@ -23,13 +22,13 @@ data Cmd =   LeftPick  Pos Cell
            | RightPick Pos Cell 
 
 width :: Int
-width =  25
+width =  40
 
 height :: Int
-height =  15
+height =  30
 
 cellSize :: Int
-cellSize = 30
+cellSize = 20
 
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
@@ -82,15 +81,6 @@ groupAttrs (x,y) =
                )
              ] 
 
-bombCount :: Board -> Pos -> Int
-bombCount board (x,y)  = 
-    let localIndices = [(xx,yy) | xx <- [x-1..x+1], yy <- [y-1..y+1], (xx,yy) /= (x,y)]
-        localMaybeCells = (fmap (\p -> Data.Map.lookup p board) localIndices)
-        localCells = catMaybes localMaybeCells
-        localBombs = filter hasBomb localCells
-        count = length localBombs
-    in count
-
 showCell :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Cmd)
 showCell board pos c@(Cell _ True _) = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
@@ -119,46 +109,37 @@ showCell board pos c@(Cell _ False _) = do
                   return $ leftmost [l_rEv, r_rEv]
     return ev
 
-fromLeftPick :: Board -> Pos -> Cell -> [(Pos, Maybe Cell)]
-fromLeftPick board (x,y) c = 
-    let localIndices = [(xx,yy) | xx <- [x-1..x+1], yy <- [y-1..y+1], (xx,yy) /= (x,y)]
-        localMaybeCells = (fmap (\p -> Data.Map.lookup p board) localIndices)
-        localCells = catMaybes localMaybeCells
-        localBombs = filter hasBomb localCells
-        count = length localBombs
+adjacents :: Pos -> [Pos]
+adjacents (x,y) = 
+    [(xx,yy) | xx <- [x-1..x+1]
+             , yy <- [y-1..y+1]
+             , (xx,yy) /= (x,y)
+             , xx >= 0, yy >= 0
+             , xx < width, yy < height]
 
-        setExposed cl = case cl of
-                           Just jcl -> Just jcl { exposed=True }
-                           Nothing -> Nothing
-
-    in [((x,y), Just c {exposed=True})] ++ if count == 0 then (zip localIndices $ fmap setExposed localMaybeCells) else []
+bombCount :: Board -> Pos -> Int
+bombCount board (x,y)  = 
+    let indices = adjacents (x,y)
+    in length $ filter hasBomb $ fmap (board !) indices
 
 fromLeftPickM :: Pos -> State Board [(Pos, Maybe Cell)]
-fromLeftPickM (x,y) = do
-    let setter = 
-            \board ->
-                let indices = [(xx,yy) | xx <- [x-1..x+1]
-                                       , yy <- [y-1..y+1]
-                                       , (xx,yy) /= (x,y)
-                                       , xx >= 0, yy >= 0
-                                       , xx < width, yy < height]
+fromLeftPickM (x,y) = 
+    state $
+        \board ->
+            let indices = adjacents (x,y)
+                count = length $ filter hasBomb $ fmap (board !) indices
+                c = board ! (x,y)
+                updatedCell = c {exposed=True}
 
-                    cells = (fmap (\i -> board ! trace ("floc" ++ show i) i) indices)
-                    bombs = filter hasBomb cells
-                    count = length bombs
-                    c = board ! trace ("loc"++show (x,y))  (x,y)
-                    updatedCell = c {exposed=True}
-                    updatedBoard = if (not $ exposed c) then insert (x,y) updatedCell board else board
-                    neighborUpdater = mapM fromLeftPickM (if (not $ exposed c) && count == 0 then indices else [] )
-                    (updatedNeighbors, updatedNeighborsBoard) = runState neighborUpdater updatedBoard
+                updatedBoard = if not (exposed c) 
+                               then insert (x,y) updatedCell board 
+                               else board
 
-                    
-
-                in ([((x,y), Just updatedCell)] ++ concat updatedNeighbors, updatedNeighborsBoard)
-    state setter
+                neighborUpdater = mapM fromLeftPickM (if not (exposed c) && count == 0 then indices else [] )
+                (updatedNeighbors, updatedNeighborsBoard) = runState neighborUpdater updatedBoard
+            in (((x,y), Just updatedCell) : concat updatedNeighbors, updatedNeighborsBoard)
 
 fromPick :: Board -> Cmd -> [(Pos, Maybe Cell)]
--- fromPick board (LeftPick p c) = fromLeftPick board p c        
 fromPick board (LeftPick p c) = 
     let (nc,_) = runState (fromLeftPickM p) board
     in nc
