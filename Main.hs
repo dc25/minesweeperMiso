@@ -82,10 +82,12 @@ groupAttrs (x,y) =
 
 bombCount :: Board -> Pos -> Int
 bombCount board (x,y)  = 
-    let localIndices = [(xx,yy) | xx <- [x-1..x+1], yy <- [y-1..y+1]]
-        localCells = catMaybes $ (fmap (\p -> Data.Map.lookup p board) localIndices)
+    let localIndices = [(xx,yy) | xx <- [x-1..x+1], yy <- [y-1..y+1], (xx,yy) /= (x,y)]
+        localMaybeCells = (fmap (\p -> Data.Map.lookup p board) localIndices)
+        localCells = catMaybes localMaybeCells
         localBombs = filter hasBomb localCells
-    in length localBombs
+        count = length localBombs
+    in count
 
 showCell :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Cmd)
 showCell board pos c@(Cell _ True _) = do
@@ -115,9 +117,27 @@ showCell board pos c@(Cell _ False _) = do
                   return $ leftmost [l_rEv, r_rEv]
     return ev
 
-reactToPick :: Cmd -> Map Pos (Maybe Cell)
-reactToPick (LeftPick pos c) = pos =: Just c {exposed=True} 
-reactToPick (RightPick pos c) = pos =: Just c {flagged=not $ flagged c} 
+fromLeftPick :: Board -> Pos -> Cell -> [(Pos, Maybe Cell)]
+fromLeftPick board (x,y) c = 
+    let localIndices = [(xx,yy) | xx <- [x-1..x+1], yy <- [y-1..y+1], (xx,yy) /= (x,y)]
+        localMaybeCells = (fmap (\p -> Data.Map.lookup p board) localIndices)
+        localCells = catMaybes localMaybeCells
+        localBombs = filter hasBomb localCells
+        count = length localBombs
+
+        setExposed cl = case cl of
+                           Just jcl -> Just jcl { exposed=True }
+                           Nothing -> Nothing
+
+    in [((x,y), Just c {exposed=True})] ++ if count == 0 then (zip localIndices $ fmap setExposed localMaybeCells) else []
+
+fromPick :: Board -> Cmd -> [(Pos, Maybe Cell)]
+fromPick board (LeftPick p c) = fromLeftPick board p c
+
+fromPick _ (RightPick pos c) = [(pos, Just c {flagged=not $ flagged c})]
+
+reactToPick :: Board -> Cmd -> Map Pos (Maybe Cell)
+reactToPick b c = fromList $ fromPick b c
 
 boardAttrs = fromList 
                  [ ("width" , pack $ show $ width * cellSize)
@@ -131,7 +151,7 @@ main = mainWidget $ do
     let (initialBoard, _)  = runRand mkBoard gen
     rec 
         let pick = switch $ (leftmost . elems) <$> current ev
-            updateEv = fmap reactToPick pick
+            updateEv = fmap (reactToPick initialBoard) pick
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ listHoldWithKey initialBoard updateEv (showCell initialBoard)
 
     return ()
