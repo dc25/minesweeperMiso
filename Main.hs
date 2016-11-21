@@ -23,7 +23,7 @@ width :: Int
 width =  40
 
 height :: Int
-height =  30
+height =  60
 
 cellSize :: Int
 cellSize = 15
