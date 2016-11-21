@@ -81,32 +81,38 @@ groupAttrs (x,y) =
                )
              ] 
 
+showSquare :: MonadWidget t m => Board -> Pos -> Cell -> m [Event t Cmd]
+showSquare board pos c@(Cell _ True _) = do
+    (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
+
+    let r_rEv = RightPick pos c <$ domEvent Contextmenu rEl
+        l_rEv = LeftPick  pos c <$ domEvent Click       rEl
+
+    return [l_rEv, r_rEv]
+
+showText :: MonadWidget t m => Board -> Pos -> Cell -> m [Event t Cmd]
+showText board pos c = do
+    let count = bombCount board pos
+
+    (tEl,_) <- elSvgns "text" (constDyn textAttrs) $ text $ pack $ show count
+
+    let r_tEv = RightPick pos c <$ domEvent Contextmenu tEl
+        l_tEv = LeftPick  pos c <$ domEvent Click       tEl
+
+    return [l_tEv, r_tEv]
+
 showCell :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Cmd)
 showCell board pos c@(Cell _ True _) = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
-                  let count = bombCount board pos
-
-                  (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
-                  (tEl,_) <- elSvgns "text" (constDyn textAttrs) $ text $ pack $ show count
-
-                  let r_rEv = RightPick pos c <$ domEvent Contextmenu rEl
-                      l_rEv = LeftPick  pos c <$ domEvent Click       rEl
-
-                      r_tEv = RightPick pos c <$ domEvent Contextmenu tEl
-                      l_tEv = LeftPick  pos c <$ domEvent Click       tEl
-
-                  return $ leftmost [l_rEv, r_rEv, l_tEv, r_tEv]
+                  rEv <- showSquare board pos c
+                  tEv <- showText board pos c
+                  return $ leftmost $ rEv ++ tEv
     return ev
 
 showCell board pos c@(Cell _ False _) = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
-
-                  (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
-
-                  let r_rEv = RightPick pos c <$ domEvent Contextmenu rEl
-                      l_rEv = LeftPick  pos c <$ domEvent Click       rEl
-
-                  return $ leftmost [l_rEv, r_rEv]
+                  rEv <- showSquare board pos c
+                  return $ leftmost rEv 
     return ev
 
 adjacents :: Pos -> [Pos]
