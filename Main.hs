@@ -1,11 +1,10 @@
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE OverloadedStrings #-}
-
 import Reflex
 import Reflex.Dom
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
-import Control.Monad.State 
+import Control.Monad.State (State, state, runState)
 import Data.Map as DM (Map, fromList, elems, lookup, insert, (!))
 import Data.Maybe (catMaybes)
 import Data.Text (Text, pack)
