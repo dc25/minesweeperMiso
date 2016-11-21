@@ -18,8 +18,7 @@ data Cell = Cell { hasBomb :: Bool
 type Pos = (Int, Int)
 type Board = Map Pos Cell
 
-data Cmd =   LeftPick  Pos Cell 
-           | RightPick Pos Cell 
+data Cmd =   LeftPick  Pos | RightPick Pos 
 
 width :: Int
 width =  40
@@ -85,8 +84,8 @@ showSquare :: MonadWidget t m => Board -> Pos -> Cell -> m [Event t Cmd]
 showSquare board pos c@(Cell _ True _) = do
     (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
 
-    let r_rEv = RightPick pos c <$ domEvent Contextmenu rEl
-        l_rEv = LeftPick  pos c <$ domEvent Click       rEl
+    let r_rEv = RightPick pos <$ domEvent Contextmenu rEl
+        l_rEv = LeftPick  pos <$ domEvent Click       rEl
 
     return [l_rEv, r_rEv]
 
@@ -96,8 +95,8 @@ showText board pos c = do
 
     (tEl,_) <- elSvgns "text" (constDyn textAttrs) $ text $ pack $ show count
 
-    let r_tEv = RightPick pos c <$ domEvent Contextmenu tEl
-        l_tEv = LeftPick  pos c <$ domEvent Click       tEl
+    let r_tEv = RightPick pos <$ domEvent Contextmenu tEl
+        l_tEv = LeftPick  pos <$ domEvent Click       tEl
 
     return [l_tEv, r_tEv]
 
@@ -145,11 +144,13 @@ fromLeftPickM (x,y) =
             in (((x,y), Just updatedCell) : concat updatedNeighbors, updatedNeighborsBoard)
 
 fromPick :: Board -> Cmd -> [(Pos, Maybe Cell)]
-fromPick board (LeftPick p c) = 
+fromPick board (LeftPick p) = 
     let (nc,_) = runState (fromLeftPickM p) board
     in nc
 
-fromPick _ (RightPick pos c) = [(pos, Just c {flagged=not $ flagged c})]
+fromPick board (RightPick pos) = 
+    let c = board ! pos
+    in [(pos, Just c {flagged=not $ flagged c})]
 
 reactToPick :: Board -> Cmd -> Map Pos (Maybe Cell)
 reactToPick b c = fromList $ fromPick b c
