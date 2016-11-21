@@ -148,7 +148,9 @@ fromPick board (LeftPick p c) =
     in nc
 
 fromPick board (RightPick pos c) = 
-    [(pos, Just c {flagged=not $ flagged c})]
+    if exposed c 
+    then [] -- can't flag a cell that's already exposed.
+    else [(pos, Just c {flagged=not $ flagged c})]
 
 reactToPick :: Board -> Cmd -> Map Pos (Maybe Cell)
 reactToPick b c = fromList $ fromPick b c
