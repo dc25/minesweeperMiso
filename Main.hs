@@ -129,13 +129,12 @@ fromLeftPickM (x,y) =
             let indices = adjacents (x,y)
                 count = length $ filter hasBomb $ fmap (board !) indices
                 c = board ! (x,y)
-                updatedCell = c {exposed=True}
 
-                updatedBoard = if not (exposed c) 
-                               then insert (x,y) updatedCell board 
-                               else board
+                updatedCell = c {exposed=True} 
+                updatedBoard = insert (x,y) updatedCell board 
 
-                neighborUpdater = mapM fromLeftPickM (if not (exposed c) && count == 0 then indices else [] )
+                checkList = (if not (exposed c) && count == 0 then indices else [] )
+                neighborUpdater = mapM fromLeftPickM checkList
                 (updatedNeighbors, updatedNeighborsBoard) = runState neighborUpdater updatedBoard
             in (((x,y), Just updatedCell) : concat updatedNeighbors, updatedNeighborsBoard)
 
