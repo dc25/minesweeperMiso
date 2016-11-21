@@ -43,7 +43,7 @@ getColor :: Cell -> String
 getColor (Cell hasBomb exposed flagged) = 
     case (hasBomb, exposed, flagged) of
          (      _,       _,    True) -> "red"
-         (      _,   False,       _) -> "yellow"
+         (      _,   False,       _) -> "white"
          (  True ,       _,       _) -> "black"
          (  False,       _,       _) -> "grey"
 

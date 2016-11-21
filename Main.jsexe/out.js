@@ -36512,7 +36512,7 @@ function h$$Pq()
   }
   else
   {
-    h$r1 = h$ustra("yellow");
+    h$r1 = h$ustra("white");
   };
   return h$rs();
 };
