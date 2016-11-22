@@ -42,10 +42,10 @@ mkBoard = do
 getColor :: Cell -> String
 getColor (Cell hasBomb exposed flagged) = 
     case (hasBomb, exposed, flagged) of
-         (      _,       _,    True) -> "red"
-         (      _,   False,       _) -> "green"
+         (      _,       _,    True) -> "#AAAAAA"
+         (      _,   False,       _) -> "#AAAAAA"
          (  True ,       _,       _) -> "black"
-         (  False,       _,       _) -> "grey"
+         (  False,       _,       _) -> "#909090"
 
 cellAttrs :: Cell -> Map Text Text
 cellAttrs cell = 
@@ -88,6 +88,36 @@ showSquare pos c = do
 
     return [l_rEv, r_rEv]
 
+showFlag :: MonadWidget t m => Pos -> Cell -> m [Event t Cmd]
+showFlag pos c = do
+    let flagAttrs = 
+            fromList [ ( "points", "0.20,0.40 0.70,0.55 0.70,0.25" )
+                     , ( "style",        "fill:red")
+                     , ("oncontextmenu", "return false;")
+                     ] 
+
+    (fEl,_) <- elSvgns "polygon" (constDyn $ flagAttrs ) $ return ()
+
+    let r_fEv = RightPick pos c <$ domEvent Contextmenu fEl
+        l_fEv = LeftPick  pos c <$ domEvent Click       fEl
+
+    let poleAttrs = 
+            fromList [ ( "x1", "0.70" )
+                     , ( "y1", "0.25" )
+                     , ( "x2", "0.70" )
+                     , ( "y2", "0.85" )
+                     , ( "stroke-width", ".07")
+                     , ( "stroke", "black")
+                     , ("oncontextmenu", "return false;")
+                     ] 
+
+    (pEl,_) <- elSvgns "line" (constDyn $ poleAttrs ) $ return ()
+
+    let r_pEv = RightPick pos c <$ domEvent Contextmenu pEl
+        l_pEv = LeftPick  pos c <$ domEvent Click       pEl
+
+    return [l_fEv, r_fEv, l_pEv, r_pEv]
+
 showText :: MonadWidget t m => Board -> Pos -> Cell -> m [Event t Cmd]
 showText board pos c = do
     let count = bombCount board pos
@@ -99,19 +129,38 @@ showText board pos c = do
 
     return [l_tEv, r_tEv]
 
-showCell :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
-showCell board pos c@(Cell _ True _) = do
+showWithFlag :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
+showWithFlag board pos c = do
+    (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
+                  rEv <- showSquare pos c
+                  tEv <- showFlag pos c
+                  return $ leftmost $ rEv ++ tEv
+    return (ev,c)
+
+showWithText :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
+showWithText board pos c = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
                   rEv <- showSquare pos c
                   tEv <- showText board pos c
                   return $ leftmost $ rEv ++ tEv
     return (ev,c)
 
-showCell board pos c@(Cell _ False _) = do
+showWithoutText :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
+showWithoutText board pos c = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
                   rEv <- showSquare pos c
                   return $ leftmost rEv 
     return (ev,c)
+
+showCell :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
+showCell board pos c@(Cell _ exposed flagged) = 
+    if flagged 
+    then showWithFlag board pos c
+    else let count = bombCount board pos
+         in if not exposed || (exposed && (count == 0))
+            then showWithoutText board pos c
+            else showWithText board pos c
+
 
 adjacents :: Pos -> [Pos]
 adjacents (x,y) = 
