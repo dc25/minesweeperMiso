@@ -20,13 +20,13 @@ type Board = Map Pos Cell
 data Cmd = LeftPick Pos Cell | RightPick Pos Cell
 
 width :: Int
-width =  40
+width =  30
 
 height :: Int
-height =  60
+height =  20
 
 cellSize :: Int
-cellSize = 15
+cellSize = 20
 
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
@@ -43,7 +43,7 @@ getColor :: Cell -> String
 getColor (Cell hasBomb exposed flagged) = 
     case (hasBomb, exposed, flagged) of
          (      _,       _,    True) -> "red"
-         (      _,   False,       _) -> "yellow"
+         (      _,   False,       _) -> "green"
          (  True ,       _,       _) -> "black"
          (  False,       _,       _) -> "grey"
 
@@ -79,8 +79,8 @@ groupAttrs (x,y) =
                )
              ] 
 
-showSquare :: MonadWidget t m => Board -> Pos -> Cell -> m [Event t Cmd]
-showSquare board pos c = do
+showSquare :: MonadWidget t m => Pos -> Cell -> m [Event t Cmd]
+showSquare pos c = do
     (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
 
     let r_rEv = RightPick pos c <$ domEvent Contextmenu rEl
@@ -99,19 +99,19 @@ showText board pos c = do
 
     return [l_tEv, r_tEv]
 
-showCell :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Cmd)
+showCell :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
 showCell board pos c@(Cell _ True _) = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
-                  rEv <- showSquare board pos c
+                  rEv <- showSquare pos c
                   tEv <- showText board pos c
                   return $ leftmost $ rEv ++ tEv
-    return ev
+    return (ev,c)
 
 showCell board pos c@(Cell _ False _) = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
-                  rEv <- showSquare board pos c
+                  rEv <- showSquare pos c
                   return $ leftmost rEv 
-    return ev
+    return (ev,c)
 
 adjacents :: Pos -> [Pos]
 adjacents (x,y) = 
@@ -133,11 +133,19 @@ fromLeftPickM (x,y) =
             let indices = adjacents (x,y)
                 count = length $ filter hasBomb $ fmap (board !) indices
                 c = board ! (x,y)
+                
+                updatedCell = if (not $ flagged c)
+                              then c {exposed=True} 
+                              else c
 
-                updatedCell = c {exposed=True} 
                 updatedBoard = insert (x,y) updatedCell board 
 
-                checkList = (if not (exposed c) && count == 0 then indices else [] )
+                checkList = (if     not (exposed c) 
+                                 && not (flagged c) 
+                                 && count == 0 
+                             then indices 
+                             else [] )
+
                 neighborUpdater = mapM fromLeftPickM checkList
                 (updatedNeighbors, updatedNeighborsBoard) = runState neighborUpdater updatedBoard
             in (((x,y), Just updatedCell) : concat updatedNeighbors, updatedNeighborsBoard)
@@ -152,8 +160,8 @@ fromPick board (RightPick pos c) =
     then [] -- can't flag a cell that's already exposed.
     else [(pos, Just c {flagged=not $ flagged c})]
 
-reactToPick :: Board -> Cmd -> Map Pos (Maybe Cell)
-reactToPick b c = fromList $ fromPick b c
+reactToPick :: (Board,Cmd) -> Map Pos (Maybe Cell)
+reactToPick (b,c) = fromList $ fromPick b c
 
 boardAttrs = fromList 
                  [ ("width" , pack $ show $ width * cellSize)
@@ -167,8 +175,13 @@ main = mainWidget $ do
     let (initialBoard, _)  = runRand mkBoard gen
     rec 
         let pick = switch $ (leftmost . elems) <$> current ev
-            updateEv = fmap (reactToPick initialBoard) pick
-        (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ listHoldWithKey initialBoard updateEv (showCell initialBoard)
+            pickWithCells = attachPromptlyDynWith (,) cm pick
+            updateEv = fmap reactToPick pickWithCells
+            eventAndCellMap = listHoldWithKey initialBoard updateEv (showCell initialBoard)
+            cellMap = fmap (fmap (fmap snd)) eventAndCellMap
+            eventMap = fmap (fmap (fmap fst)) eventAndCellMap
+        cm <- cellMap 
+        (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ eventMap
 
     return ()
 
