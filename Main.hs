@@ -20,10 +20,10 @@ type Board = Map Pos Cell
 data Cmd = LeftPick Pos Cell | RightPick Pos Cell
 
 width :: Int
-width =  30
+width =  32
 
 height :: Int
-height =  20
+height =  16
 
 cellSize :: Int
 cellSize = 20
@@ -79,14 +79,17 @@ groupAttrs (x,y) =
                )
              ] 
 
+mouseEv :: Reflex t => Pos -> Cell -> El t -> [Event t Cmd]
+mouseEv pos c el = 
+    let r_rEv = RightPick pos c <$ domEvent Contextmenu el
+        l_rEv = LeftPick  pos c <$ domEvent Click       el
+    in [l_rEv, r_rEv]
+
+
 showSquare :: MonadWidget t m => Pos -> Cell -> m [Event t Cmd]
 showSquare pos c = do
     (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
-
-    let r_rEv = RightPick pos c <$ domEvent Contextmenu rEl
-        l_rEv = LeftPick  pos c <$ domEvent Click       rEl
-
-    return [l_rEv, r_rEv]
+    return $ mouseEv pos c rEl
 
 showFlag :: MonadWidget t m => Pos -> Cell -> m [Event t Cmd]
 showFlag pos c = do
@@ -97,9 +100,6 @@ showFlag pos c = do
                      ] 
 
     (fEl,_) <- elSvgns "polygon" (constDyn $ flagAttrs ) $ return ()
-
-    let r_fEv = RightPick pos c <$ domEvent Contextmenu fEl
-        l_fEv = LeftPick  pos c <$ domEvent Click       fEl
 
     let poleAttrs = 
             fromList [ ( "x1", "0.70" )
@@ -113,21 +113,13 @@ showFlag pos c = do
 
     (pEl,_) <- elSvgns "line" (constDyn $ poleAttrs ) $ return ()
 
-    let r_pEv = RightPick pos c <$ domEvent Contextmenu pEl
-        l_pEv = LeftPick  pos c <$ domEvent Click       pEl
-
-    return [l_fEv, r_fEv, l_pEv, r_pEv]
+    return $ mouseEv pos c fEl ++ mouseEv pos c pEl
 
 showText :: MonadWidget t m => Board -> Pos -> Cell -> m [Event t Cmd]
 showText board pos c = do
     let count = bombCount board pos
-
     (tEl,_) <- elSvgns "text" (constDyn textAttrs) $ text $ pack $ show count
-
-    let r_tEv = RightPick pos c <$ domEvent Contextmenu tEl
-        l_tEv = LeftPick  pos c <$ domEvent Click       tEl
-
-    return [l_tEv, r_tEv]
+    return $ mouseEv pos c tEl
 
 showWithFlag :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
 showWithFlag board pos c = do
@@ -140,9 +132,9 @@ showWithFlag board pos c = do
 showWithText :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
 showWithText board pos c = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
-                  rEv <- showSquare pos c
-                  tEv <- showText board pos c
-                  return $ leftmost $ rEv ++ tEv
+                  showSquare pos c  -- not pickable
+                  showText board pos c -- not pickable
+                  return $ leftmost $ [] -- is this silly?
     return (ev,c)
 
 showWithoutText :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
@@ -231,7 +223,6 @@ main = mainWidget $ do
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
         cm <- cellMap 
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ eventMap
-
     return ()
 
 -- At end to avoid Rosetta Code unmatched quotes problem.
