@@ -117,7 +117,7 @@ showFlag pos c = do
 
 showText :: MonadWidget t m => Board -> Pos -> Cell -> m [Event t Cmd]
 showText board pos c = do
-    let count = bombCount board pos
+    let count = mineCount board pos
     (tEl,_) <- elSvgns "text" (constDyn textAttrs) $ text $ pack $ show count
     return $ mouseEv pos c tEl
 
@@ -146,7 +146,7 @@ showWithoutText board pos c = do
 
 showCell :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
 showCell board pos c@(Cell mined exposed flagged) = 
-    let count = bombCount board pos
+    let count = mineCount board pos
     in case (  mined, exposed, flagged, count) of
             (      _,       _,    True,     _) -> showWithFlag    board pos c
             (      _,   False,       _,     _) -> showWithoutText board pos c
@@ -161,8 +161,8 @@ adjacents (x,y) =
              , xx >= 0, yy >= 0
              , xx < width, yy < height]
 
-bombCount :: Board -> Pos -> Int
-bombCount board (x,y)  = 
+mineCount :: Board -> Pos -> Int
+mineCount board (x,y)  = 
     let indices = adjacents (x,y)
     in length $ filter mined $ fmap (board !) indices
 
