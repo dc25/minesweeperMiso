@@ -134,7 +134,7 @@ fromLeftPickM (x,y) =
                 count = length $ filter hasBomb $ fmap (board !) indices
                 c = board ! (x,y)
                 
-                updatedCell = if (not $ flagged c)
+                updatedCell = if (not $ flagged c) -- can't expose a flagged cell.
                               then c {exposed=True} 
                               else c
 
