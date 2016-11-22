@@ -9,7 +9,7 @@ import Data.Map as DM (Map, fromList, elems, lookup, insert, (!))
 import Data.Maybe (catMaybes)
 import Data.Text (Text, pack)
 
-data Cell = Cell { hasBomb :: Bool 
+data Cell = Cell { mined :: Bool 
                  , exposed :: Bool
                  , flagged :: Bool
                  }
@@ -40,8 +40,8 @@ mkBoard = do
     return $ fromList $ zip positions cells 
 
 getColor :: Cell -> String
-getColor (Cell hasBomb exposed flagged) = 
-    case (hasBomb, exposed, flagged) of
+getColor (Cell mined exposed flagged) = 
+    case (mined, exposed, flagged) of
          (      _,       _,    True) -> "#AAAAAA"
          (      _,   False,       _) -> "#AAAAAA"
          (  True ,       _,       _) -> "black"
@@ -145,14 +145,13 @@ showWithoutText board pos c = do
     return (ev,c)
 
 showCell :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
-showCell board pos c@(Cell _ exposed flagged) = 
-    if flagged 
-    then showWithFlag board pos c
-    else let count = bombCount board pos
-         in if not exposed || (exposed && (count == 0))
-            then showWithoutText board pos c
-            else showWithText board pos c
-
+showCell board pos c@(Cell mined exposed flagged) = 
+    let count = bombCount board pos
+    in case (  mined, exposed, flagged, count) of
+            (      _,       _,    True,     _) -> showWithFlag    board pos c
+            (      _,   False,       _,     _) -> showWithoutText board pos c
+            (      _,    True,       _,     0) -> showWithoutText board pos c
+            (      _,       _,       _,     _) -> showWithText    board pos c
 
 adjacents :: Pos -> [Pos]
 adjacents (x,y) = 
@@ -165,14 +164,14 @@ adjacents (x,y) =
 bombCount :: Board -> Pos -> Int
 bombCount board (x,y)  = 
     let indices = adjacents (x,y)
-    in length $ filter hasBomb $ fmap (board !) indices
+    in length $ filter mined $ fmap (board !) indices
 
 fromLeftPickM :: Pos -> State Board [(Pos, Maybe Cell)]
 fromLeftPickM (x,y) = 
     state $
         \board ->
             let indices = adjacents (x,y)
-                count = length $ filter hasBomb $ fmap (board !) indices
+                count = length $ filter mined $ fmap (board !) indices
                 c = board ! (x,y)
                 
                 updatedCell = if (not $ flagged c) -- can't expose a flagged cell.
