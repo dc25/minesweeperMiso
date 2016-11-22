@@ -134,7 +134,7 @@ showWithText board pos c = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
                   showSquare pos c  -- not pickable
                   showText board pos c -- not pickable
-                  return $ leftmost $ [] -- is this silly?
+                  return never
     return (ev,c)
 
 showWithoutText :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
