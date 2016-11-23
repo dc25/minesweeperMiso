@@ -236,7 +236,6 @@ boardAttrs = fromList
                  , ("oncontextmenu", "return false;")
                  ]
 
-
 showBoard :: MonadWidget t m => m Int
 showBoard = do
     gen <- liftIO getStdGen
