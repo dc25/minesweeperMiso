@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Reflex
 import Reflex.Dom
+import Debug.Trace
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State (State, state, runState)
@@ -12,7 +13,7 @@ import Data.Text (Text, pack)
 data Cell = Cell { mined :: Bool 
                  , exposed :: Bool
                  , flagged :: Bool
-                 }
+                 } deriving Show
 
 type Pos = (Int, Int)
 type Board = Map Pos Cell
@@ -227,21 +228,24 @@ fromPick board (LeftPick p c) =
     in nc
 
 fromPick board (RightPick pos c) = 
-    if exposed c 
+    if (exposed $ trace ("Right pick on " ++ show c) c)
     then [] -- can't flag a cell that's already exposed.
     else [(pos, Just c {flagged=not $ flagged c})]
 
 reactToPick :: (Board,Cmd) -> Map Pos (Maybe Cell)
 reactToPick (b,c) = fromList $ fromPick b c
 
+boardAttrs :: Map Text Text
 boardAttrs = fromList 
                  [ ("width" , pack $ show $ width * cellSize)
                  , ("height", pack $ show $ height * cellSize)
                  , ("style" , "border:solid; margin:8em")
                  , ("oncontextmenu", "return false;")
                  ]
-main :: IO ()
-main = mainWidget $ do
+
+
+showBoard :: MonadWidget t m => m ()
+showBoard = do
     gen <- liftIO getStdGen
     let (initialBoard, _)  = runRand mkBoard gen
     rec 
@@ -254,6 +258,9 @@ main = mainWidget $ do
         cm <- cellMap 
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ eventMap
     return ()
+
+main :: IO ()
+main = mainWidget showBoard
 
 -- At end to avoid Rosetta Code unmatched quotes problem.
 elSvgns :: MonadWidget t m => Text -> Dynamic t (Map Text Text) -> m a -> m (El t, a)
