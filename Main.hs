@@ -193,18 +193,18 @@ mineCount board pos  =
     length $ filter mined $ fmap (board !) $ adjacents pos
 
 fromLeftPickM :: Pos -> State Board [(Pos, Maybe Cell)]
-fromLeftPickM (x,y) = 
+fromLeftPickM pos = 
     state $
         \board ->
-            let indices = adjacents (x,y)
+            let indices = adjacents pos
                 count = length $ filter mined $ fmap (board !) indices
-                c = board ! (x,y)
+                c = board ! pos
                 
                 updatedCell = if (flagged c) -- can't expose a flagged cell.
                               then c
                               else c {exposed=True} 
 
-                updatedBoard = insert (x,y) updatedCell board 
+                updatedBoard = insert pos updatedCell board 
 
                 checkList = (if (exposed c) || (flagged c) || (mined c) || count /= 0 
                              then [] 
@@ -213,7 +213,7 @@ fromLeftPickM (x,y) =
 
                 neighborUpdater = mapM fromLeftPickM checkList
                 (updatedNeighbors, updatedNeighborsBoard) = runState neighborUpdater updatedBoard
-            in (((x,y), Just updatedCell) : concat updatedNeighbors, updatedNeighborsBoard)
+            in ((pos, Just updatedCell) : concat updatedNeighbors, updatedNeighborsBoard)
 
 fromPick :: Board -> Cmd -> [(Pos, Maybe Cell)]
 fromPick board (LeftPick p c) = 
