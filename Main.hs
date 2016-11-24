@@ -17,7 +17,7 @@ data Cell = Cell { mined :: Bool
 type Pos = (Int, Int)
 type Board = Map Pos Cell
 
-data Cmd = LeftPick Pos Cell | RightPick Pos Cell
+data Cmd = LeftPick Pos | RightPick Pos 
 
 width :: Int
 width =  32
@@ -26,7 +26,7 @@ height :: Int
 height =  16
 
 cellSize :: Int
-cellSize = 30
+cellSize = 25
 
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
@@ -76,8 +76,8 @@ groupAttrs (x,y) =
 
 mouseEv :: Reflex t => Pos -> Cell -> El t -> [Event t Cmd]
 mouseEv pos c el = 
-    let r_rEv = RightPick pos c <$ domEvent Contextmenu el
-        l_rEv = LeftPick  pos c <$ domEvent Click       el
+    let r_rEv = RightPick pos <$ domEvent Contextmenu el
+        l_rEv = LeftPick  pos <$ domEvent Click       el
     in [l_rEv, r_rEv]
 
 
@@ -216,14 +216,15 @@ fromLeftPickM pos =
             in ((pos, Just updatedCell) : concat updatedNeighbors, updatedNeighborsBoard)
 
 fromPick :: Board -> Cmd -> [(Pos, Maybe Cell)]
-fromPick board (LeftPick p c) = 
+fromPick board (LeftPick p) = 
     let (nc,_) = runState (fromLeftPickM p) board
     in nc
 
-fromPick board (RightPick pos c) = 
-    if exposed c
-    then [] -- can't flag a cell that's already exposed.
-    else [(pos, Just c {flagged=not $ flagged c})]
+fromPick board (RightPick pos ) = 
+    let c = board ! pos
+    in if exposed c
+       then [] -- can't flag a cell that's already exposed.
+       else [(pos, Just c {flagged=not $ flagged c})]
 
 reactToPick :: (Board,Cmd) -> Map Pos (Maybe Cell)
 reactToPick (b,c) = fromList $ fromPick b c
@@ -236,8 +237,9 @@ boardAttrs = fromList
                  , ("oncontextmenu", "return false;")
                  ]
 
-showBoard :: MonadWidget t m => m Int
+showBoard :: MonadWidget t m => m (Dynamic t Board)
 showBoard = do
+    bEv <- el "div" $ button "Hello!" 
     gen <- liftIO getStdGen
     let (initialBoard, _)  = runRand mkBoard gen
     rec 
@@ -249,12 +251,13 @@ showBoard = do
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
         cm <- cellMap 
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ eventMap
-    return 5
+    cellMap
 
 main :: IO ()
 main = mainWidget $ do 
-                       v <- showBoard; 
-                       text $ pack $ show v
+                       v <- el "div" showBoard
+                       let dLen = fmap  (pack.show.length.(filter exposed).elems) v
+                       el "div" $ dynText dLen
                        return ()
 
 -- At end to avoid Rosetta Code unmatched quotes problem.
