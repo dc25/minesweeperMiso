@@ -237,12 +237,15 @@ boardAttrs = fromList
                  , ("oncontextmenu", "return false;")
                  ]
 
-showBoard :: MonadWidget t m => m (Dynamic t Board)
+
+showBoard :: MonadWidget t m => m ()
 showBoard = do
-    bEv <- el "div" $ button "Hello!" 
     gen <- liftIO getStdGen
     let (initialBoard, _)  = runRand mkBoard gen
     rec 
+        -- let autoPicks = zipWith ($) (cycle [LeftPick,RightPick]) $ [(x,y) | x <- [2,4..width-1], y <- [2,4..height -1]]
+        -- m_bEv <- el "div" $ button "Autopick!!!" 
+        -- pick <- zipListWithEvent const autoPicks m_bEv
         let pick = switch $ (leftmost . elems) <$> current ev
             pickWithCells = attachPromptlyDynWith (,) cm pick
             updateEv = fmap reactToPick pickWithCells
@@ -251,14 +254,10 @@ showBoard = do
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
         cm <- cellMap 
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ eventMap
-    cellMap
+    return ()
 
 main :: IO ()
-main = mainWidget $ do 
-                       v <- el "div" showBoard
-                       let dLen = fmap  (pack.show.length.(filter exposed).elems) v
-                       el "div" $ dynText dLen
-                       return ()
+main = mainWidget showBoard
 
 -- At end to avoid Rosetta Code unmatched quotes problem.
 elSvgns :: MonadWidget t m => Text -> Dynamic t (Map Text Text) -> m a -> m (El t, a)
