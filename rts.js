@@ -7966,7 +7966,7 @@ function h$blockThread(t,o,resume) {
 // returns null if nothing to do, otherwise
 // the next function to run
 var h$lastGc = Date.now();
-var h$gcInterval = 1000; // ms
+var h$gcInterval = 60000; // ms
 function h$scheduler(next) {
     ;
     // if we have a running synchronous thread, the only thing we can do is continue
