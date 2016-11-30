@@ -255,9 +255,9 @@ showBoard = do
             showCellOnBoard = showCell initialBoard
             dm0 = mapWithFunctorToDMap $ mapWithKey showCellOnBoard initialBoard
             dm' = fmap (PatchDMap . mapWithFunctorToDMap . mapWithKey (\k v -> ComposeMaybe $ fmap (showCellOnBoard k) v)) updateEv
-            eventAndCellMap = do
-                (a0, a') <- sequenceDMapWithAdjust dm0 dm'
-                fmap dmapToMap . incrementalToDynamic <$> holdIncremental a0 a' --TODO: Move the dmapToMap to the righthand side so it doesn't get fully redone every time
+            ap = sequenceDMapWithAdjust dm0 dm'
+            eventAndCellMap = ap >>= \(a0, a') -> fmap dmapToMap . incrementalToDynamic <$> holdIncremental a0 a' --TODO: Move the dmapToMap to the righthand side so it doesn't get fully redone every time
+                
         let cellMap = fmap (fmap (fmap snd)) eventAndCellMap
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
         cm <- cellMap 
