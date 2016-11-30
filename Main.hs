@@ -1,13 +1,17 @@
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 import Reflex
 import Reflex.Dom
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State (State, state, runState)
-import Data.Map as DM (Map, fromList, elems, lookup, insert, (!))
+import Data.Map as DM (Map, fromList, elems, lookup, insert, mapWithKey, (!))
 import Data.Maybe (catMaybes)
 import Data.Text (Text, pack)
+import Data.Functor.Misc (dmapToMap, mapWithFunctorToDMap)
+
+
 
 data Cell = Cell { mined :: Bool 
                  , exposed :: Bool
@@ -237,6 +241,16 @@ boardAttrs = fromList
                  , ("oncontextmenu", "return false;")
                  ]
 
+lhwk :: forall t m k v a. (Ord k, DomBuilder t m, MonadHold t m) => Map k v -> Event t (Map k (Maybe v)) -> (k -> v -> m a) -> m (Dynamic t (Map k a))
+lhwk m0 m' f = do
+  let dm0 = mapWithFunctorToDMap $ DM.mapWithKey f m0
+      dm' = fmap (PatchDMap . mapWithFunctorToDMap . DM.mapWithKey (\k v -> ComposeMaybe $ fmap (f k) v)) m'
+  (a0, a') <- sequenceDMapWithAdjust dm0 dm'
+  fmap dmapToMap . incrementalToDynamic <$> holdIncremental a0 a' --TODO: Move the dmapToMap to the righthand side so it doesn't get fully redone every time
+
+
+
+
 
 showBoard :: MonadWidget t m => m ()
 showBoard = do
@@ -249,7 +263,7 @@ showBoard = do
         let pick = switch $ (leftmost . elems) <$> current ev
             pickWithCells = attachPromptlyDynWith (,) cm pick
             updateEv = fmap reactToPick pickWithCells
-            eventAndCellMap = listHoldWithKey initialBoard updateEv (showCell initialBoard)
+            eventAndCellMap = lhwk initialBoard updateEv (showCell initialBoard)
             cellMap = fmap (fmap (fmap snd)) eventAndCellMap
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
         cm <- cellMap 
