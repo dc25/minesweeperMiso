@@ -1,6 +1,7 @@
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+
 import Reflex
 import Reflex.Dom
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
@@ -244,7 +245,9 @@ boardAttrs = fromList
 showBoard :: MonadWidget t m => m ()
 showBoard = do
     gen <- liftIO getStdGen
-    let (initialBoard, _)  = runRand mkBoard gen
+    let (initial, _)  = runRand mkBoard gen
+        showCellOnBoard = showCell initial
+        initialDm = mapWithFunctorToDMap $ mapWithKey showCellOnBoard initial
     rec 
         -- let autoPicks = zipWith ($) (cycle [LeftPick,RightPick]) $ [(x,y) | x <- [2,4..width-1], y <- [2,4..height -1]]
         -- m_bEv <- el "div" $ button "Autopick!!!" 
@@ -252,13 +255,10 @@ showBoard = do
         let pick = switch $ (leftmost . elems) <$> current ev
             pickWithCells = attachPromptlyDynWith (,) cm pick
             updateEv = fmap reactToPick pickWithCells
-            showCellOnBoard = showCell initialBoard
-            dm0 = mapWithFunctorToDMap $ mapWithKey showCellOnBoard initialBoard
-            dm' = fmap (PatchDMap . mapWithFunctorToDMap . mapWithKey (\k v -> ComposeMaybe $ fmap (showCellOnBoard k) v)) updateEv
-            ap = sequenceDMapWithAdjust dm0 dm'
-            eventAndCellMap = ap >>= \(a0, a') -> fmap dmapToMap . incrementalToDynamic <$> holdIncremental a0 a' --TODO: Move the dmapToMap to the righthand side so it doesn't get fully redone every time
-                
-        let cellMap = fmap (fmap (fmap snd)) eventAndCellMap
+            updateDm = fmap (PatchDMap . mapWithFunctorToDMap . mapWithKey (\k v -> ComposeMaybe $ fmap (showCellOnBoard k) v)) updateEv
+            ap = sequenceDMapWithAdjust initialDm updateDm
+            eventAndCellMap = ap >>= \(a0, a') -> fmap dmapToMap . incrementalToDynamic <$> holdIncremental a0 a' 
+            cellMap = fmap (fmap (fmap snd)) eventAndCellMap
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
         cm <- cellMap 
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ eventMap
