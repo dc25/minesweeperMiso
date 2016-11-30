@@ -242,9 +242,9 @@ boardAttrs = fromList
                  ]
 
 lhwk :: forall t m k v a. (Ord k, DomBuilder t m, MonadHold t m) => Map k v -> Event t (Map k (Maybe v)) -> (k -> v -> m a) -> m (Dynamic t (Map k a))
-lhwk m0 m' f = do
-  let dm0 = mapWithFunctorToDMap $ DM.mapWithKey f m0
-      dm' = fmap (PatchDMap . mapWithFunctorToDMap . DM.mapWithKey (\k v -> ComposeMaybe $ fmap (f k) v)) m'
+lhwk initialBoard updateEv showCellOnBoard = do
+  let dm0 = mapWithFunctorToDMap $ DM.mapWithKey showCellOnBoard initialBoard
+      dm' = fmap (PatchDMap . mapWithFunctorToDMap . DM.mapWithKey (\k v -> ComposeMaybe $ fmap (showCellOnBoard k) v)) updateEv
   (a0, a') <- sequenceDMapWithAdjust dm0 dm'
   fmap dmapToMap . incrementalToDynamic <$> holdIncremental a0 a' --TODO: Move the dmapToMap to the righthand side so it doesn't get fully redone every time
 
@@ -263,8 +263,14 @@ showBoard = do
         let pick = switch $ (leftmost . elems) <$> current ev
             pickWithCells = attachPromptlyDynWith (,) cm pick
             updateEv = fmap reactToPick pickWithCells
-            eventAndCellMap = lhwk initialBoard updateEv (showCell initialBoard)
-            cellMap = fmap (fmap (fmap snd)) eventAndCellMap
+            showCellOnBoard = showCell initialBoard
+                -- eventAndCellMap = lhwk initialBoard updateEv showCellOnBoard
+            eventAndCellMap = do
+                let dm0 = mapWithFunctorToDMap $ mapWithKey showCellOnBoard initialBoard
+                    dm' = fmap (PatchDMap . mapWithFunctorToDMap . mapWithKey (\k v -> ComposeMaybe $ fmap (showCellOnBoard k) v)) updateEv
+                (a0, a') <- sequenceDMapWithAdjust dm0 dm'
+                fmap dmapToMap . incrementalToDynamic <$> holdIncremental a0 a' --TODO: Move the dmapToMap to the righthand side so it doesn't get fully redone every time
+        let cellMap = fmap (fmap (fmap snd)) eventAndCellMap
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
         cm <- cellMap 
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ eventMap
