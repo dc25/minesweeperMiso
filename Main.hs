@@ -28,7 +28,7 @@ width :: Int
 width =  32
 
 height :: Int
-height =  16
+height =  64
 
 cellSize :: Int
 cellSize = 25
@@ -247,7 +247,7 @@ showBoard = do
     gen <- liftIO getStdGen
     let (initial, _)  = runRand mkBoard gen
         showCellOnBoard = showCell initial
-        -- initialDm = mapWithFunctorToDMap $ mapWithKey showCellOnBoard initial
+        initialDm = mapWithFunctorToDMap $ mapWithKey showCellOnBoard initial
     rec 
         -- let autoPicks = zipWith ($) (cycle [LeftPick,RightPick]) $ [(x,y) | x <- [2,4..width-1], y <- [2,4..height -1]]
         -- m_bEv <- el "div" $ button "Autopick!!!" 
@@ -255,10 +255,14 @@ showBoard = do
         let pick = switch $ (leftmost . elems) <$> current ev
             pickWithCells = attachPromptlyDynWith (,) cm pick
             updateEv = fmap reactToPick pickWithCells
-            -- updateDm = fmap (PatchDMap . mapWithFunctorToDMap . mapWithKey (\k v -> ComposeMaybe $ fmap (showCellOnBoard k) v)) updateEv
-            -- ap = sequenceDMapWithAdjust initialDm updateDm
-            -- eventAndCellMap = ap >>= \(a0, a') -> fmap dmapToMap . incrementalToDynamic <$> holdIncremental a0 a' 
-            eventAndCellMap = listHoldWithKey initial updateEv showCellOnBoard
+
+            -- sequenceDMapWithAdjust version
+            updateDm = fmap (PatchDMap . mapWithFunctorToDMap . mapWithKey (\k v -> ComposeMaybe $ fmap (showCellOnBoard k) v)) updateEv
+            ap = sequenceDMapWithAdjust initialDm updateDm
+            eventAndCellMap = ap >>= \(a0, a') -> fmap dmapToMap . incrementalToDynamic <$> holdIncremental a0 a' 
+
+            -- listHoldWithKey version
+            -- eventAndCellMap = listHoldWithKey initial updateEv showCellOnBoard
             cellMap = fmap (fmap (fmap snd)) eventAndCellMap
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
         cm <- cellMap 
