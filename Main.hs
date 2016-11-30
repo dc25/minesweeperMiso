@@ -241,17 +241,6 @@ boardAttrs = fromList
                  , ("oncontextmenu", "return false;")
                  ]
 
-lhwk :: forall t m k v a. (Ord k, DomBuilder t m, MonadHold t m) => Map k v -> Event t (Map k (Maybe v)) -> (k -> v -> m a) -> m (Dynamic t (Map k a))
-lhwk initialBoard updateEv showCellOnBoard = do
-  let dm0 = mapWithFunctorToDMap $ DM.mapWithKey showCellOnBoard initialBoard
-      dm' = fmap (PatchDMap . mapWithFunctorToDMap . DM.mapWithKey (\k v -> ComposeMaybe $ fmap (showCellOnBoard k) v)) updateEv
-  (a0, a') <- sequenceDMapWithAdjust dm0 dm'
-  fmap dmapToMap . incrementalToDynamic <$> holdIncremental a0 a' --TODO: Move the dmapToMap to the righthand side so it doesn't get fully redone every time
-
-
-
-
-
 showBoard :: MonadWidget t m => m ()
 showBoard = do
     gen <- liftIO getStdGen
@@ -264,10 +253,9 @@ showBoard = do
             pickWithCells = attachPromptlyDynWith (,) cm pick
             updateEv = fmap reactToPick pickWithCells
             showCellOnBoard = showCell initialBoard
-                -- eventAndCellMap = lhwk initialBoard updateEv showCellOnBoard
+            dm0 = mapWithFunctorToDMap $ mapWithKey showCellOnBoard initialBoard
+            dm' = fmap (PatchDMap . mapWithFunctorToDMap . mapWithKey (\k v -> ComposeMaybe $ fmap (showCellOnBoard k) v)) updateEv
             eventAndCellMap = do
-                let dm0 = mapWithFunctorToDMap $ mapWithKey showCellOnBoard initialBoard
-                    dm' = fmap (PatchDMap . mapWithFunctorToDMap . mapWithKey (\k v -> ComposeMaybe $ fmap (showCellOnBoard k) v)) updateEv
                 (a0, a') <- sequenceDMapWithAdjust dm0 dm'
                 fmap dmapToMap . incrementalToDynamic <$> holdIncremental a0 a' --TODO: Move the dmapToMap to the righthand side so it doesn't get fully redone every time
         let cellMap = fmap (fmap (fmap snd)) eventAndCellMap
