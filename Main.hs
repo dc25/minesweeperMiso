@@ -97,7 +97,7 @@ showMine pos c = do
                      , ("oncontextmenu", "return false;")
                      ] 
 
-    (cEl,_) <- elSvgns "circle" (constDyn $ mineAttrs ) $ return ()
+    (cEl,_) <- elSvgns "circle" (constDyn mineAttrs ) $ return ()
 
     let stemAttrs = 
             fromList [ ( "points", "0.65,0.15 0.85,0.35 0.65,0.55 0.45,0.35 " )
@@ -105,8 +105,8 @@ showMine pos c = do
                      , ("oncontextmenu", "return false;")
                      ] 
 
-    (sEl,_) <- elSvgns "polygon" (constDyn $ stemAttrs ) $ return ()
-    (fEl,_) <- elSvgns "circle" (constDyn $ mineAttrs ) $ return ()
+    (sEl,_) <- elSvgns "polygon" (constDyn stemAttrs ) $ return ()
+    (fEl,_) <- elSvgns "circle" (constDyn mineAttrs ) $ return ()
 
     return $ mouseEv pos c cEl ++ mouseEv pos c sEl  
 
@@ -118,7 +118,7 @@ showFlag pos c = do
                      , ("oncontextmenu", "return false;")
                      ] 
 
-    (fEl,_) <- elSvgns "polygon" (constDyn $ flagAttrs ) $ return ()
+    (fEl,_) <- elSvgns "polygon" (constDyn flagAttrs ) $ return ()
 
     let poleAttrs = 
             fromList [ ( "x1", "0.70" )
@@ -130,7 +130,7 @@ showFlag pos c = do
                      , ("oncontextmenu", "return false;")
                      ] 
 
-    (pEl,_) <- elSvgns "line" (constDyn $ poleAttrs ) $ return ()
+    (pEl,_) <- elSvgns "line" (constDyn poleAttrs ) $ return ()
 
     return $ mouseEv pos c fEl ++ mouseEv pos c pEl
 
@@ -140,46 +140,42 @@ showText board pos c = do
     (tEl,_) <- elSvgns "text" (constDyn textAttrs) $ text $ pack $ show count
     return $ mouseEv pos c tEl
 
-showWithMine :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Msg), Cell)
+showWithMine :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
 showWithMine board pos c = do
-    (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
                   rEv <- showSquare pos c
                   tEv <- showMine pos c
-                  return $ leftmost $ rEv ++ tEv
-    return (ev,c)
+                  return (leftmost $ rEv ++ tEv,c)
 
-showWithFlag :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Msg), Cell)
+showWithFlag :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
 showWithFlag board pos c = do
-    (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
                   rEv <- showSquare pos c
                   tEv <- showFlag pos c
-                  return $ leftmost $ rEv ++ tEv
-    return (ev,c)
+                  return (leftmost $ rEv ++ tEv,c)
 
-showWithText :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Msg), Cell)
+showWithText :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
 showWithText board pos c = do
-    (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
                   showSquare pos c  -- not pickable
                   showText board pos c -- not pickable
-                  return never
-    return (ev,c)
+                  return (never,c)
 
-showWithoutText :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Msg), Cell)
+showWithoutText :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
 showWithoutText board pos c = do
-    (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
                   rEv <- showSquare pos c
-                  return $ leftmost rEv 
-    return (ev,c)
+                  return (leftmost rEv ,c)
 
-showCell :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Msg), Cell)
-showCell board pos c@(Cell mined exposed flagged) = 
-    let count = mineCount board pos
-    in case (  mined, exposed, flagged, count) of
-            (      _,       _,    True,     _) -> showWithFlag    board pos c
-            (      _,   False,       _,     _) -> showWithoutText board pos c
-            (   True,    True,       _,     _) -> showWithMine    board pos c
-            (      _,    True,       _,     0) -> showWithoutText board pos c
-            (      _,       _,       _,     _) -> showWithText    board pos c
+showInGroup :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
+showInGroup board pos c@(Cell mined exposed flagged) = 
+                  case (  mined, exposed, flagged, mineCount board pos) of
+                       (      _,       _,    True,     _) -> showWithFlag    board pos c
+                       (      _,   False,       _,     _) -> showWithoutText board pos c
+                       (   True,    True,       _,     _) -> showWithMine    board pos c
+                       (      _,    True,       _,     0) -> showWithoutText board pos c
+                       (      _,       _,       _,     _) -> showWithText    board pos c
+
+showCell :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
+showCell board pos c = do
+    (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ showInGroup board pos c
+    return ev
 
 adjacents :: Pos -> [Pos]
 adjacents (x,y) = 
@@ -201,13 +197,13 @@ fromLeftPickM pos =
                 count = length $ filter mined $ fmap (board !) indices
                 c = board ! pos
                 
-                updatedCell = if (flagged c) -- can't expose a flagged cell.
+                updatedCell = if flagged c -- can't expose a flagged cell.
                               then c
                               else c {exposed=True} 
 
                 updatedBoard = insert pos updatedCell board 
 
-                checkList = (if (exposed c) || (flagged c) || (mined c) || count /= 0 
+                checkList = (if exposed c || flagged c || mined c || count /= 0 
                              then [] 
                              else indices 
                              )
@@ -252,7 +248,7 @@ showBoard = do
             cellMap = fmap (fmap (fmap snd)) eventAndCellMap
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
         cm <- cellMap 
-        (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ eventMap
+        (_, ev) <- elSvgns "svg" (constDyn boardAttrs) eventMap
     return ()
 
 main :: IO ()
