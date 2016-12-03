@@ -1,7 +1,5 @@
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
-
 import Reflex
 import Reflex.Dom
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
@@ -11,8 +9,6 @@ import Data.Map as DM (Map, fromList, elems, lookup, insert, mapWithKey, (!))
 import Data.Maybe (catMaybes)
 import Data.Text (Text, pack)
 import Data.Functor.Misc (dmapToMap, mapWithFunctorToDMap)
-
-
 
 data Cell = Cell { mined :: Bool 
                  , exposed :: Bool
@@ -24,11 +20,11 @@ type Board = Map Pos Cell
 
 data Cmd = LeftPick Pos | RightPick Pos 
 
-width :: Int
-width =  32
+w :: Int
+w =  15
 
-height :: Int
-height =  64
+h :: Int
+h = 10
 
 cellSize :: Int
 cellSize = 25
@@ -40,7 +36,7 @@ mkCell = do
 
 mkBoard :: RandomGen g => Rand g Board
 mkBoard = do
-    let positions = [(x,y) | x <- [0..width-1], y <- [0..height-1]]
+    let positions = [(x,y) | x <- [0..w-1], y <- [0..h-1]]
     cells <- sequence $ repeat mkCell
     return $ fromList $ zip positions cells 
 
@@ -62,8 +58,8 @@ cellAttrs cell =
 
 textAttrs :: Map Text Text
 textAttrs = 
-    fromList [ ( "x",            "0.5")
-             , ( "y",            "0.6")
+    fromList [ ("x",             "0.5")
+             , ("y",             "0.6")
              , ("font-size",     "1.0" )
              , ("fill",          "blue" )
              , ("alignment-baseline", "middle" )
@@ -191,7 +187,7 @@ adjacents (x,y) =
              , yy <- [y-1..y+1]
              , (xx,yy) /= (x,y)
              , xx >= 0, yy >= 0
-             , xx < width, yy < height]
+             , xx < w, yy < h]
 
 mineCount :: Board -> Pos -> Int
 mineCount board pos  = 
@@ -236,8 +232,8 @@ reactToPick (b,c) = fromList $ fromPick b c
 
 boardAttrs :: Map Text Text
 boardAttrs = fromList 
-                 [ ("width" , pack $ show $ width * cellSize)
-                 , ("height", pack $ show $ height * cellSize)
+                 [ ("width" , pack $ show $ w * cellSize)
+                 , ("height", pack $ show $ h * cellSize)
                  , ("style" , "border:solid; margin:8em")
                  , ("oncontextmenu", "return false;")
                  ]
@@ -249,20 +245,10 @@ showBoard = do
         showCellOnBoard = showCell initial
         initialDm = mapWithFunctorToDMap $ mapWithKey showCellOnBoard initial
     rec 
-        -- let autoPicks = zipWith ($) (cycle [LeftPick,RightPick]) $ [(x,y) | x <- [2,4..width-1], y <- [2,4..height -1]]
-        -- m_bEv <- el "div" $ button "Autopick!!!" 
-        -- pick <- zipListWithEvent const autoPicks m_bEv
         let pick = switch $ (leftmost . elems) <$> current ev
             pickWithCells = attachPromptlyDynWith (,) cm pick
             updateEv = fmap reactToPick pickWithCells
-
-            -- sequenceDMapWithAdjust version
-            updateDm = fmap (PatchDMap . mapWithFunctorToDMap . mapWithKey (\k v -> ComposeMaybe $ fmap (showCellOnBoard k) v)) updateEv
-            ap = sequenceDMapWithAdjust initialDm updateDm
-            eventAndCellMap = ap >>= \(a0, a') -> fmap dmapToMap . incrementalToDynamic <$> holdIncremental a0 a' 
-
-            -- listHoldWithKey version
-            -- eventAndCellMap = listHoldWithKey initial updateEv showCellOnBoard
+            eventAndCellMap = listHoldWithKey initial updateEv showCellOnBoard
             cellMap = fmap (fmap (fmap snd)) eventAndCellMap
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
         cm <- cellMap 
