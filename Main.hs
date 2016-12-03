@@ -18,7 +18,7 @@ data Cell = Cell { mined :: Bool
 type Pos = (Int, Int)
 type Board = Map Pos Cell
 
-data Cmd = LeftPick Pos | RightPick Pos 
+data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
 w =  15
@@ -75,19 +75,19 @@ groupAttrs (x,y) =
                )
              ] 
 
-mouseEv :: Reflex t => Pos -> Cell -> El t -> [Event t Cmd]
+mouseEv :: Reflex t => Pos -> Cell -> El t -> [Event t Msg]
 mouseEv pos c el = 
     let r_rEv = RightPick pos <$ domEvent Contextmenu el
         l_rEv = LeftPick  pos <$ domEvent Click       el
     in [l_rEv, r_rEv]
 
 
-showSquare :: MonadWidget t m => Pos -> Cell -> m [Event t Cmd]
+showSquare :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
 showSquare pos c = do
     (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
     return $ mouseEv pos c rEl
 
-showMine :: MonadWidget t m => Pos -> Cell -> m [Event t Cmd]
+showMine :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
 showMine pos c = do
     let mineAttrs = 
             fromList [ ( "cx", "0.45" )
@@ -110,7 +110,7 @@ showMine pos c = do
 
     return $ mouseEv pos c cEl ++ mouseEv pos c sEl  
 
-showFlag :: MonadWidget t m => Pos -> Cell -> m [Event t Cmd]
+showFlag :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
 showFlag pos c = do
     let flagAttrs = 
             fromList [ ( "points", "0.20,0.40 0.70,0.55 0.70,0.25" )
@@ -134,13 +134,13 @@ showFlag pos c = do
 
     return $ mouseEv pos c fEl ++ mouseEv pos c pEl
 
-showText :: MonadWidget t m => Board -> Pos -> Cell -> m [Event t Cmd]
+showText :: MonadWidget t m => Board -> Pos -> Cell -> m [Event t Msg]
 showText board pos c = do
     let count = mineCount board pos
     (tEl,_) <- elSvgns "text" (constDyn textAttrs) $ text $ pack $ show count
     return $ mouseEv pos c tEl
 
-showWithMine :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
+showWithMine :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Msg), Cell)
 showWithMine board pos c = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
                   rEv <- showSquare pos c
@@ -148,7 +148,7 @@ showWithMine board pos c = do
                   return $ leftmost $ rEv ++ tEv
     return (ev,c)
 
-showWithFlag :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
+showWithFlag :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Msg), Cell)
 showWithFlag board pos c = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
                   rEv <- showSquare pos c
@@ -156,7 +156,7 @@ showWithFlag board pos c = do
                   return $ leftmost $ rEv ++ tEv
     return (ev,c)
 
-showWithText :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
+showWithText :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Msg), Cell)
 showWithText board pos c = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
                   showSquare pos c  -- not pickable
@@ -164,14 +164,14 @@ showWithText board pos c = do
                   return never
     return (ev,c)
 
-showWithoutText :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
+showWithoutText :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Msg), Cell)
 showWithoutText board pos c = do
     (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ do
                   rEv <- showSquare pos c
                   return $ leftmost rEv 
     return (ev,c)
 
-showCell :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Cmd), Cell)
+showCell :: MonadWidget t m => Board -> Pos -> Cell -> m ((Event t Msg), Cell)
 showCell board pos c@(Cell mined exposed flagged) = 
     let count = mineCount board pos
     in case (  mined, exposed, flagged, count) of
@@ -216,7 +216,7 @@ fromLeftPickM pos =
                 (updatedNeighbors, updatedNeighborsBoard) = runState neighborUpdater updatedBoard
             in ((pos, Just updatedCell) : concat updatedNeighbors, updatedNeighborsBoard)
 
-fromPick :: Board -> Cmd -> [(Pos, Maybe Cell)]
+fromPick :: Board -> Msg -> [(Pos, Maybe Cell)]
 fromPick board (LeftPick p) = 
     let (nc,_) = runState (fromLeftPickM p) board
     in nc
@@ -227,7 +227,7 @@ fromPick board (RightPick pos ) =
        then [] -- can't flag a cell that's already exposed.
        else [(pos, Just c {flagged=not $ flagged c})]
 
-reactToPick :: (Board,Cmd) -> Map Pos (Maybe Cell)
+reactToPick :: (Board,Msg) -> Map Pos (Maybe Cell)
 reactToPick (b,c) = fromList $ fromPick b c
 
 boardAttrs :: Map Text Text
