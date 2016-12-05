@@ -6,7 +6,6 @@ import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State (State, state, runState)
 import Data.Map as DM (Map, fromList, elems, lookup, insert, mapWithKey, (!))
-import Data.Maybe (catMaybes)
 import Data.Text (Text, pack)
 import Data.Functor.Misc (dmapToMap, mapWithFunctorToDMap)
 
@@ -21,13 +20,13 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  15
+w =  40
 
 h :: Int
-h = 10
+h = 40
 
 cellSize :: Int
-cellSize = 25
+cellSize = 20
 
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
@@ -86,6 +85,7 @@ showSquare :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
 showSquare pos c = do
     (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
     return $ mouseEv pos c rEl
+    -- return [never]
 
 showMine :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
 showMine pos c = do
@@ -172,10 +172,11 @@ showInGroup board pos c@(Cell mined exposed flagged) =
                        (      _,    True,       _,     0) -> showWithoutText board pos c
                        (      _,       _,       _,     _) -> showWithText    board pos c
 
+
+
 showCell :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
-showCell board pos c = do
-    (_,ev) <- elSvgns "g" (constDyn $ groupAttrs pos) $ showInGroup board pos c
-    return ev
+showCell board pos c@(Cell mined _ _) = 
+    fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ showInGroup board pos c
 
 adjacents :: Pos -> [Pos]
 adjacents (x,y) = 
@@ -238,15 +239,13 @@ showBoard :: MonadWidget t m => m ()
 showBoard = do
     gen <- liftIO getStdGen
     let (initial, _)  = runRand mkBoard gen
-        showCellOnBoard = showCell initial
-        initialDm = mapWithFunctorToDMap $ mapWithKey showCellOnBoard initial
     rec 
         let pick = switch $ (leftmost . elems) <$> current ev
             pickWithCells = attachPromptlyDynWith (,) cm pick
             updateEv = fmap reactToPick pickWithCells
-            eventAndCellMap = listHoldWithKey initial updateEv showCellOnBoard
-            cellMap = fmap (fmap (fmap snd)) eventAndCellMap
+            eventAndCellMap = listHoldWithKey initial updateEv (showCell initial)
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
+            cellMap = fmap (fmap (fmap snd)) eventAndCellMap
         cm <- cellMap 
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) eventMap
     return ()
