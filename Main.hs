@@ -23,7 +23,7 @@ w :: Int
 w =  40
 
 h :: Int
-h = 40
+h = 80
 
 cellSize :: Int
 cellSize = 20
@@ -31,7 +31,7 @@ cellSize = 20
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
     t <- getRandomR (0.0::Float, 1.0)
-    return $ Cell (t < 0.2) False False
+    return $ Cell (t < 0.201) False False
 
 mkBoard :: RandomGen g => Rand g Board
 mkBoard = do
@@ -85,7 +85,6 @@ showSquare :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
 showSquare pos c = do
     (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
     return $ mouseEv pos c rEl
-    -- return [never]
 
 showMine :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
 showMine pos c = do
@@ -176,7 +175,11 @@ showInGroup board pos c@(Cell mined exposed flagged) =
 
 showCell :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
 showCell board pos c@(Cell mined _ _) = 
-    fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ showInGroup board pos c
+    -- if mined then fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ showInGroup board pos c else return (never,c)
+    -- fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ return (never,c)
+    -- fmap snd $ elSvgns "g"  (constDyn $ fromList []) $ return (never,c)
+    -- fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ showInGroup board pos c 
+    fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ showInGroup board pos c 
 
 adjacents :: Pos -> [Pos]
 adjacents (x,y) = 
