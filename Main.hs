@@ -248,9 +248,9 @@ showBoard = do
             updateEv = fmap reactToPick pickWithCells
             eventAndCellMap = listHoldWithKey initial updateEv (showCell initial)
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
-            cellMap = fmap (fmap (fmap snd)) eventAndCellMap
-        cm <- cellMap 
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) eventMap
+        let cellMap = fmap (fmap (fmap snd)) eventAndCellMap
+        cm <- cellMap 
     return ()
 
 main :: IO ()
