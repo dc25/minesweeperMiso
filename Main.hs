@@ -183,10 +183,6 @@ showInGroup board pos c@(Cell mined exposed flagged) =
 
 showCell :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
 showCell board pos c@(Cell mined _ _) = 
-    -- if mined then fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ showInGroup board pos c else return (never,c)
-    -- fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ return (never,c)
-    -- fmap snd $ elSvgns "g"  (constDyn $ fromList []) $ return (never,c)
-    -- fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ showInGroup board pos c 
     fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ showInGroup board pos c 
 
 adjacents :: Pos -> [Pos]
