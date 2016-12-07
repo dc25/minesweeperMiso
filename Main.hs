@@ -1,13 +1,17 @@
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
+
 import Reflex
 import Reflex.Dom
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State (State, state, runState)
-import Data.Map as DM (Map, fromList, elems, lookup, insert, mapWithKey, (!))
+import Data.Map as DM (Map, fromList, elems, lookup, findWithDefault, insert, mapWithKey, (!))
 import Data.Text (Text, pack)
 import Data.Functor.Misc (dmapToMap, mapWithFunctorToDMap)
+import Data.Traversable (forM)
 
 data Cell = Cell { mined :: Bool 
                  , exposed :: Bool
@@ -20,10 +24,10 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  40
+w =  20
 
 h :: Int
-h = 80
+h = 20
 
 cellSize :: Int
 cellSize = 20
@@ -33,11 +37,15 @@ mkCell = do
     t <- getRandomR (0.0::Float, 1.0)
     return $ Cell (t < 0.201) False False
 
+initBoard :: RandomGen g => [Pos] -> Rand g Board
+initBoard positions = do
+    cells <- sequence $ repeat mkCell
+    return $ (fromList $ zip positions cells)
+
 mkBoard :: RandomGen g => Rand g Board
 mkBoard = do
-    let positions = [(x,y) | x <- [0..w-1], y <- [0..h-1]]
-    cells <- sequence $ repeat mkCell
-    return $ fromList $ zip positions cells 
+    let positions = [(x,y) | x <- [0..w-1], y <- [0..h-1]]   
+    initBoard positions
 
 getColor :: Cell -> String
 getColor (Cell _ exposed _) = if exposed then "#909090" else "#AAAAAA"
@@ -238,6 +246,30 @@ boardAttrs = fromList
                  , ("oncontextmenu", "return false;")
                  ]
 
+
+showCell2 :: forall t m. MonadWidget t m => Dynamic t (Map Pos Cell) -> Pos -> m (Event t Msg)
+showCell2 dBoard pos = do
+    let dCell = fmap (findWithDefault (Cell False False False) pos) dBoard
+    (el, _) <- elSvgns "g"  (constDyn $ groupAttrs pos) $ 
+                   elSvgns "rect" (fmap cellAttrs dCell) $ 
+                       return ()
+    return $ LeftPick pos <$ domEvent Click el 
+
+
+updateBoard (LeftPick pos) oldBoard = insert pos (Cell False False True) oldBoard
+
+showBoard2 :: forall t m. MonadWidget t m => m ()
+showBoard2 = do 
+    gen <- liftIO getStdGen
+    rec 
+        let 
+            indices = [(x,y) | x <- [0..w-1], y <- [0..h-1]] 
+            (initialBoard, _)  = runRand (initBoard indices) gen
+        board <- foldDyn updateBoard initialBoard pickEv
+        (el, ev) <- elSvgns "svg" (constDyn boardAttrs) $ forM indices $ showCell2 board
+        let pickEv =  leftmost ev
+    return ()
+
 showBoard :: MonadWidget t m => m ()
 showBoard = do
     gen <- liftIO getStdGen
@@ -254,8 +286,10 @@ showBoard = do
     return ()
 
 main :: IO ()
-main = mainWidget showBoard
+main = mainWidget showBoard2
 
 -- At end to avoid Rosetta Code unmatched quotes problem.
 elSvgns :: MonadWidget t m => Text -> Dynamic t (Map Text Text) -> m a -> m (El t, a)
 elSvgns = elDynAttrNS' (Just "http://www.w3.org/2000/svg")
+
+
