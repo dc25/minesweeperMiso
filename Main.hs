@@ -225,12 +225,10 @@ boardAttrs = fromList
 showCell2 :: forall t m. MonadWidget t m => Dynamic t (Map Pos Cell) -> Pos -> m (Event t Msg)
 showCell2 dBoard pos = do
     let dCell = fmap (findWithDefault (Cell False False False 0) pos) dBoard
-    (_, ev) <- elSvgns "g"  (constDyn $ groupAttrs pos) $ do
-                   (el,_) <- elSvgns "rect" (fmap cellAttrs dCell) $  do
-                       return ()
-                   ev2 <- dyn (fmap (showCellDetail pos) dCell)
-                   return $ LeftPick pos <$ domEvent Click el
-    return ev
+    ev2 :: Event t (Event t Msg) <- dyn (fmap (showCell pos) dCell)
+    ev3 :: Behavior t (Event t Msg) <- hold never ev2
+    let ev4 :: Event t Msg = switch ev3
+    return $ ev4
 
 updateBoard :: Msg -> Board -> Board
 updateBoard msg oldBoard = 
