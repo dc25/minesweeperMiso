@@ -23,10 +23,10 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  40
+w =  20
 
 h :: Int
-h = 80
+h = 10
 
 cellSize :: Int
 cellSize = 20
@@ -226,8 +226,9 @@ showCell2 :: forall t m. MonadWidget t m => Dynamic t (Map Pos Cell) -> Pos -> m
 showCell2 dBoard pos = do
     let dCell = fmap (findWithDefault (Cell False False False 0) pos) dBoard
     (_, ev) <- elSvgns "g"  (constDyn $ groupAttrs pos) $ do
-                   (el,_) <- elSvgns "rect" (fmap cellAttrs dCell) $ do
-                                 return ()
+                   (el,_) <- elSvgns "rect" (fmap cellAttrs dCell) $  do
+                       return ()
+                   ev2 <- dyn (fmap (showCellDetail pos) dCell)
                    return $ LeftPick pos <$ domEvent Click el
     return ev
 
@@ -263,7 +264,7 @@ showBoard = do
     return ()
 
 main :: IO ()
-main = mainWidget showBoard
+main = mainWidget showBoard2
 
 elSvgns :: MonadWidget t m => Text -> Dynamic t (Map Text Text) -> m a -> m (El t, a)
 elSvgns = elDynAttrNS' (Just "http://www.w3.org/2000/svg")
