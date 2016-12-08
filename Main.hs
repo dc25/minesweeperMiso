@@ -81,19 +81,12 @@ groupAttrs (x,y) =
                )
              ] 
 
-mouseEv :: Reflex t => Pos -> El t -> [Event t Msg]
-mouseEv pos el = 
-    let r_rEv = RightPick pos <$ domEvent Contextmenu el
-        l_rEv = LeftPick  pos <$ domEvent Click       el
-    in [l_rEv, r_rEv]
-
-
-showSquare :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
+showSquare :: MonadWidget t m => Pos -> Cell -> m [El t]
 showSquare pos c = do
     (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
-    return $ mouseEv pos rEl
+    return $ [rEl]
 
-showMine :: MonadWidget t m => Pos -> m [Event t Msg]
+showMine :: MonadWidget t m => Pos -> m [El t]
 showMine pos = do
     let mineAttrs = 
             fromList [ ( "cx", "0.45" )
@@ -114,9 +107,9 @@ showMine pos = do
     (sEl,_) <- elSvgns "polygon" (constDyn stemAttrs ) $ return ()
     (fEl,_) <- elSvgns "circle" (constDyn mineAttrs ) $ return ()
 
-    return $ mouseEv pos cEl ++ mouseEv pos sEl  
+    return $ [cEl, sEl]
 
-showFlag :: MonadWidget t m => Pos -> m [Event t Msg]
+showFlag :: MonadWidget t m => Pos -> m [El t]
 showFlag pos = do
     let flagAttrs = 
             fromList [ ( "points", "0.20,0.40 0.70,0.55 0.70,0.25" )
@@ -138,14 +131,14 @@ showFlag pos = do
 
     (pEl,_) <- elSvgns "line" (constDyn poleAttrs ) $ return ()
 
-    return $ mouseEv pos fEl ++ mouseEv pos pEl
+    return $ [fEl, pEl]
 
-showText :: MonadWidget t m => Int -> m [Event t Msg]
+showText :: MonadWidget t m => Int -> m [El t]
 showText count = do
     elSvgns "text" (constDyn textAttrs) $ text $ pack $ show count
     return []
 
-showCellDetail :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
+showCellDetail :: MonadWidget t m => Pos -> Cell -> m [El t]
 showCellDetail pos c@(Cell mined exposed flagged mines) = do
     case (  mined, exposed, flagged, 0 == mines) of
          (      _,       _,    True,     _) -> showFlag pos 
@@ -153,13 +146,18 @@ showCellDetail pos c@(Cell mined exposed flagged mines) = do
          (      _,    True,       _, False) -> showText mines
          (      _,       _,       _,     _) -> return []
 
+mouseEv :: Reflex t => Pos -> El t -> [Event t Msg]
+mouseEv pos el = 
+    let r_rEv = RightPick pos <$ domEvent Contextmenu el
+        l_rEv = LeftPick  pos <$ domEvent Click       el
+    in [l_rEv, r_rEv]
 
 showCell :: MonadWidget t m => Pos -> Cell -> m (Event t Msg)
 showCell pos c@(Cell mined _ _ _) = 
     fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ do
-        rEv <- showSquare pos c
-        dEv <- showCellDetail pos c 
-        return (leftmost $ rEv ++ dEv)
+        rEl <- showSquare pos c
+        dEl <- showCellDetail pos c 
+        return $ leftmost $ concatMap (mouseEv pos) (rEl ++ dEl)
 
 showAndReturnCell :: MonadWidget t m => Pos -> Cell -> m (Event t Msg, Cell)
 showAndReturnCell pos c = do
@@ -265,7 +263,7 @@ showBoard = do
     return ()
 
 main :: IO ()
-main = mainWidget showBoard2
+main = mainWidget showBoard
 
 elSvgns :: MonadWidget t m => Text -> Dynamic t (Map Text Text) -> m a -> m (El t, a)
 elSvgns = elDynAttrNS' (Just "http://www.w3.org/2000/svg")
