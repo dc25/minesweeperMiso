@@ -1,8 +1,6 @@
 {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-
-
 import Reflex
 import Reflex.Dom
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
@@ -16,6 +14,7 @@ import Data.Traversable (forM)
 data Cell = Cell { mined :: Bool 
                  , exposed :: Bool
                  , flagged :: Bool
+                 , mines :: Int
                  } deriving Show
 
 type Pos = (Int, Int)
@@ -24,10 +23,10 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  20
+w =  40
 
 h :: Int
-h = 20
+h = 80
 
 cellSize :: Int
 cellSize = 20
@@ -35,12 +34,12 @@ cellSize = 20
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
     t <- getRandomR (0.0::Float, 1.0)
-    return $ Cell (t < 0.201) False False
+    return $ Cell (t < 0.201) False False 0
 
 initBoard :: RandomGen g => [Pos] -> Rand g Board
 initBoard positions = do
     cells <- sequence $ repeat mkCell
-    return $ (fromList $ zip positions cells)
+    return $ fromList (zip positions cells)
 
 mkBoard :: RandomGen g => Rand g Board
 mkBoard = do
@@ -48,7 +47,7 @@ mkBoard = do
     initBoard positions
 
 getColor :: Cell -> String
-getColor (Cell _ exposed _) = if exposed then "#909090" else "#AAAAAA"
+getColor (Cell _ exposed _ _) = if exposed then "#909090" else "#AAAAAA"
 
 cellAttrs :: Cell -> Map Text Text
 cellAttrs cell = 
@@ -82,8 +81,8 @@ groupAttrs (x,y) =
                )
              ] 
 
-mouseEv :: Reflex t => Pos -> Cell -> El t -> [Event t Msg]
-mouseEv pos c el = 
+mouseEv :: Reflex t => Pos -> El t -> [Event t Msg]
+mouseEv pos el = 
     let r_rEv = RightPick pos <$ domEvent Contextmenu el
         l_rEv = LeftPick  pos <$ domEvent Click       el
     in [l_rEv, r_rEv]
@@ -92,10 +91,10 @@ mouseEv pos c el =
 showSquare :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
 showSquare pos c = do
     (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
-    return $ mouseEv pos c rEl
+    return $ mouseEv pos rEl
 
-showMine :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
-showMine pos c = do
+showMine :: MonadWidget t m => Pos -> m [Event t Msg]
+showMine pos = do
     let mineAttrs = 
             fromList [ ( "cx", "0.45" )
                      , ( "cy", "0.55" )
@@ -115,10 +114,10 @@ showMine pos c = do
     (sEl,_) <- elSvgns "polygon" (constDyn stemAttrs ) $ return ()
     (fEl,_) <- elSvgns "circle" (constDyn mineAttrs ) $ return ()
 
-    return $ mouseEv pos c cEl ++ mouseEv pos c sEl  
+    return $ mouseEv pos cEl ++ mouseEv pos sEl  
 
-showFlag :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
-showFlag pos c = do
+showFlag :: MonadWidget t m => Pos -> m [Event t Msg]
+showFlag pos = do
     let flagAttrs = 
             fromList [ ( "points", "0.20,0.40 0.70,0.55 0.70,0.25" )
                      , ( "style",        "fill:red")
@@ -139,51 +138,33 @@ showFlag pos c = do
 
     (pEl,_) <- elSvgns "line" (constDyn poleAttrs ) $ return ()
 
-    return $ mouseEv pos c fEl ++ mouseEv pos c pEl
+    return $ mouseEv pos fEl ++ mouseEv pos pEl
 
-showText :: MonadWidget t m => Board -> Pos -> Cell -> m [Event t Msg]
-showText board pos c = do
-    let count = mineCount board pos
-    (tEl,_) <- elSvgns "text" (constDyn textAttrs) $ text $ pack $ show count
-    return $ mouseEv pos c tEl
+showText :: MonadWidget t m => Int -> m [Event t Msg]
+showText count = do
+    elSvgns "text" (constDyn textAttrs) $ text $ pack $ show count
+    return []
 
-showWithMine :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
-showWithMine board pos c = do
-                  rEv <- showSquare pos c
-                  tEv <- showMine pos c
-                  return (leftmost $ rEv ++ tEv,c)
-
-showWithFlag :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
-showWithFlag board pos c = do
-                  rEv <- showSquare pos c
-                  tEv <- showFlag pos c
-                  return (leftmost $ rEv ++ tEv,c)
-
-showWithText :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
-showWithText board pos c = do
-                  showSquare pos c  -- not pickable
-                  showText board pos c -- not pickable
-                  return (never,c)
-
-showWithoutText :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
-showWithoutText board pos c = do
-                  rEv <- showSquare pos c
-                  return (leftmost rEv ,c)
-
-showInGroup :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
-showInGroup board pos c@(Cell mined exposed flagged) = 
-                  case (  mined, exposed, flagged, mineCount board pos) of
-                       (      _,       _,    True,     _) -> showWithFlag    board pos c
-                       (      _,   False,       _,     _) -> showWithoutText board pos c
-                       (   True,    True,       _,     _) -> showWithMine    board pos c
-                       (      _,    True,       _,     0) -> showWithoutText board pos c
-                       (      _,       _,       _,     _) -> showWithText    board pos c
+showCellDetail :: MonadWidget t m => Pos -> Cell -> m [Event t Msg]
+showCellDetail pos c@(Cell mined exposed flagged mines) = do
+    case (  mined, exposed, flagged, 0 == mines) of
+         (      _,       _,    True,     _) -> showFlag pos 
+         (   True,    True,       _,     _) -> showMine pos 
+         (      _,    True,       _, False) -> showText mines
+         (      _,       _,       _,     _) -> return []
 
 
+showCell :: MonadWidget t m => Pos -> Cell -> m (Event t Msg)
+showCell pos c@(Cell mined _ _ _) = 
+    fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ do
+        rEv <- showSquare pos c
+        dEv <- showCellDetail pos c 
+        return (leftmost $ rEv ++ dEv)
 
-showCell :: MonadWidget t m => Board -> Pos -> Cell -> m (Event t Msg, Cell)
-showCell board pos c@(Cell mined _ _) = 
-    fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ showInGroup board pos c 
+showAndReturnCell :: MonadWidget t m => Pos -> Cell -> m (Event t Msg, Cell)
+showAndReturnCell pos c = do
+    ev <- showCell pos c
+    return (ev,c)
 
 adjacents :: Pos -> [Pos]
 adjacents (x,y) = 
@@ -195,7 +176,7 @@ adjacents (x,y) =
 
 mineCount :: Board -> Pos -> Int
 mineCount board pos  = 
-    length $ filter mined $ fmap (board !) $ adjacents pos
+    length $ filter mined $ (board !) <$> adjacents pos
 
 fromLeftPickM :: Pos -> State Board [(Pos, Maybe Cell)]
 fromLeftPickM pos = 
@@ -207,7 +188,7 @@ fromLeftPickM pos =
                 
                 updatedCell = if flagged c -- can't expose a flagged cell.
                               then c
-                              else c {exposed=True} 
+                              else c {exposed=True, mines = count} 
 
                 updatedBoard = insert pos updatedCell board 
 
@@ -220,19 +201,19 @@ fromLeftPickM pos =
                 (updatedNeighbors, updatedNeighborsBoard) = runState neighborUpdater updatedBoard
             in ((pos, Just updatedCell) : concat updatedNeighbors, updatedNeighborsBoard)
 
-fromPick :: Board -> Msg -> [(Pos, Maybe Cell)]
-fromPick board (LeftPick p) = 
+fromPick :: Msg -> Board ->[(Pos, Maybe Cell)]
+fromPick (LeftPick p) board = 
     let (nc,_) = runState (fromLeftPickM p) board
     in nc
 
-fromPick board (RightPick pos ) = 
+fromPick (RightPick pos ) board = 
     let c = board ! pos
     in if exposed c
        then [] -- can't flag a cell that's already exposed.
        else [(pos, Just c {flagged=not $ flagged c})]
 
 reactToPick :: (Board,Msg) -> Map Pos (Maybe Cell)
-reactToPick (b,c) = fromList $ fromPick b c
+reactToPick (b,c) = fromList $ fromPick c b
 
 boardAttrs :: Map Text Text
 boardAttrs = fromList 
@@ -245,25 +226,27 @@ boardAttrs = fromList
 
 showCell2 :: forall t m. MonadWidget t m => Dynamic t (Map Pos Cell) -> Pos -> m (Event t Msg)
 showCell2 dBoard pos = do
-    let dCell = fmap (findWithDefault (Cell False False False) pos) dBoard
-    (el, _) <- elSvgns "g"  (constDyn $ groupAttrs pos) $ 
-                   elSvgns "rect" (fmap cellAttrs dCell) $ 
-                       return ()
-    return $ LeftPick pos <$ domEvent Click el 
+    let dCell = fmap (findWithDefault (Cell False False False 0) pos) dBoard
+    (_, ev) <- elSvgns "g"  (constDyn $ groupAttrs pos) $ do
+                   (el,_) <- elSvgns "rect" (fmap cellAttrs dCell) $ do
+                                 return ()
+                   return $ LeftPick pos <$ domEvent Click el
+    return ev
 
-
-updateBoard (LeftPick pos) oldBoard = insert pos (Cell False False True) oldBoard
+updateBoard :: Msg -> Board -> Board
+updateBoard msg oldBoard = 
+        let updates = fromPick msg oldBoard 
+            updater b (p, Just c) = insert p c b
+        in foldl updater oldBoard updates
 
 showBoard2 :: forall t m. MonadWidget t m => m ()
 showBoard2 = do 
     gen <- liftIO getStdGen
     rec 
-        let 
-            indices = [(x,y) | x <- [0..w-1], y <- [0..h-1]] 
+        let indices = [(x,y) | x <- [0..w-1], y <- [0..h-1]] 
             (initialBoard, _)  = runRand (initBoard indices) gen
-        board <- foldDyn updateBoard initialBoard pickEv
+        board <- foldDyn updateBoard initialBoard (leftmost ev)
         (el, ev) <- elSvgns "svg" (constDyn boardAttrs) $ forM indices $ showCell2 board
-        let pickEv =  leftmost ev
     return ()
 
 showBoard :: MonadWidget t m => m ()
@@ -274,7 +257,7 @@ showBoard = do
         let pick = switch $ (leftmost . elems) <$> current ev
             pickWithCells = attachPromptlyDynWith (,) cm pick
             updateEv = fmap reactToPick pickWithCells
-            eventAndCellMap = listHoldWithKey initial updateEv (showCell initial)
+            eventAndCellMap = listHoldWithKey initial updateEv showAndReturnCell 
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) eventMap
         let cellMap = fmap (fmap (fmap snd)) eventAndCellMap
@@ -284,8 +267,5 @@ showBoard = do
 main :: IO ()
 main = mainWidget showBoard2
 
--- At end to avoid Rosetta Code unmatched quotes problem.
 elSvgns :: MonadWidget t m => Text -> Dynamic t (Map Text Text) -> m a -> m (El t, a)
 elSvgns = elDynAttrNS' (Just "http://www.w3.org/2000/svg")
-
-
