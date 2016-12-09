@@ -6,7 +6,7 @@ import Reflex.Dom
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State (State, state, runState)
-import Data.Map as DM (Map, fromList, elems, lookup, findWithDefault, insert, mapWithKey, (!))
+import Data.Map as DM (Map, toList, fromList, elems, lookup, findWithDefault, insert, mapWithKey, (!))
 import Data.Text (Text, pack)
 import Data.Functor.Misc (dmapToMap, mapWithFunctorToDMap)
 import Data.Traversable (forM)
@@ -26,7 +26,7 @@ w :: Int
 w =  32
 
 h :: Int
-h = 16
+h = 64
 
 cellSize :: Int
 cellSize = 20
@@ -242,7 +242,7 @@ showBoard2 = do
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ forM indices $ showCell2 board
     return ()
 
-showBoard :: MonadWidget t m => m ()
+showBoard :: MonadWidget t m => m (Dynamic t Bool)
 showBoard = do
     gen <- liftIO getStdGen
     let (initial, _)  = runRand mkBoard gen
@@ -255,10 +255,17 @@ showBoard = do
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) eventMap
         let cellMap = fmap (fmap (fmap snd)) eventAndCellMap
         cm <- cellMap 
-    return ()
+    let cellPosList  = (fmap toList) cm
+        cellList = fmap (fmap snd) cellPosList
+        exposedMines = fmap (filter (\c -> exposed c && mined c)) cellList
+        gameOver = fmap ((/=0).length) exposedMines
+    return gameOver
 
 main :: IO ()
-main = mainWidget showBoard
+main = mainWidget $ do
+                        gameOver <- showBoard
+                        dyn (fmap (\b -> if b then text "gameover" else text "keepgoing") (gameOver) )
+                        return ()
 
 elSvgns :: MonadWidget t m => Text -> Dynamic t (Map Text Text) -> m a -> m (El t, a)
 elSvgns = elDynAttrNS' (Just "http://www.w3.org/2000/svg")
