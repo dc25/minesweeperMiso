@@ -23,10 +23,10 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  20
+w =  32
 
 h :: Int
-h = 10
+h = 16
 
 cellSize :: Int
 cellSize = 20
@@ -50,17 +50,14 @@ getColor :: Cell -> String
 getColor (Cell _ exposed _ _) = if exposed then "#909090" else "#AAAAAA"
 
 cellAttrs :: Cell -> Map Text Text
-cellAttrs cell = 
-    let size = 0.9
-        placement = 0.5 - (size/2.0)
-
-    in fromList [ ( "x",            pack $ show placement)
-                , ( "y",            pack $ show placement)
-                , ( "width",        pack $ show size)
-                , ( "height",       pack $ show size)
-                , ( "style",        pack $ "fill:" ++ getColor cell)
-                , ("oncontextmenu", "return false;")
-                ] 
+cellAttrs cell =
+    fromList [ ( "x",            "0.05")
+             , ( "y",            "0.05")
+             , ( "width",        "0.9")
+             , ( "height",       "0.9")
+             , ( "style",        pack $ "fill:" ++ getColor cell)
+             , ( "oncontextmenu", "return false;")
+             ]
 
 textAttrs :: Map Text Text
 textAttrs = 
