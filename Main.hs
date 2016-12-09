@@ -221,7 +221,6 @@ boardAttrs = fromList
                  , ("oncontextmenu", "return false;")
                  ]
 
-
 showCell2 :: forall t m. MonadWidget t m => Dynamic t (Map Pos Cell) -> Pos -> m (Event t Msg)
 showCell2 dBoard pos = do
     let dCell = fmap (findWithDefault (Cell False False False 0) pos) dBoard
