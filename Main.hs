@@ -81,10 +81,10 @@ groupAttrs (x,y) =
                )
              ] 
 
-showSquare :: MonadWidget t m => Pos -> Cell -> m [El t]
-showSquare pos c = do
+showSquare :: MonadWidget t m => Cell -> m [El t]
+showSquare c = do
     (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
-    return $ [rEl]
+    return [rEl]
 
 showMine :: MonadWidget t m => Pos -> m [El t]
 showMine pos = do
@@ -107,7 +107,7 @@ showMine pos = do
     (sEl,_) <- elSvgns "polygon" (constDyn stemAttrs ) $ return ()
     (fEl,_) <- elSvgns "circle" (constDyn mineAttrs ) $ return ()
 
-    return $ [cEl, sEl]
+    return [cEl, sEl]
 
 showFlag :: MonadWidget t m => Pos -> m [El t]
 showFlag pos = do
@@ -131,7 +131,7 @@ showFlag pos = do
 
     (pEl,_) <- elSvgns "line" (constDyn poleAttrs ) $ return ()
 
-    return $ [fEl, pEl]
+    return [fEl, pEl]
 
 showText :: MonadWidget t m => Int -> m [El t]
 showText count = do
@@ -139,7 +139,7 @@ showText count = do
     return []
 
 showCellDetail :: MonadWidget t m => Pos -> Cell -> m [El t]
-showCellDetail pos c@(Cell mined exposed flagged mines) = do
+showCellDetail pos c@(Cell mined exposed flagged mines) = 
     case (  mined, exposed, flagged, 0 == mines) of
          (      _,       _,    True,     _) -> showFlag pos 
          (   True,    True,       _,     _) -> showMine pos 
@@ -153,9 +153,9 @@ mouseEv pos el =
     in [l_rEv, r_rEv]
 
 showCell :: MonadWidget t m => Pos -> Cell -> m (Event t Msg)
-showCell pos c@(Cell mined _ _ _) = 
+showCell pos c = 
     fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ do
-        rEl <- showSquare pos c
+        rEl <- showSquare c
         dEl <- showCellDetail pos c 
         return $ leftmost $ concatMap (mouseEv pos) (rEl ++ dEl)
 
@@ -227,7 +227,7 @@ showCell2 dBoard pos = do
     ev2 :: Event t (Event t Msg) <- dyn (fmap (showCell pos) dCell)
     ev3 :: Behavior t (Event t Msg) <- hold never ev2
     let ev4 :: Event t Msg = switch ev3
-    return $ ev4
+    return ev4
 
 updateBoard :: Msg -> Board -> Board
 updateBoard msg oldBoard = 
@@ -242,7 +242,7 @@ showBoard2 = do
         let indices = [(x,y) | x <- [0..w-1], y <- [0..h-1]] 
             (initialBoard, _)  = runRand (initBoard indices) gen
         board <- foldDyn updateBoard initialBoard (leftmost ev)
-        (el, ev) <- elSvgns "svg" (constDyn boardAttrs) $ forM indices $ showCell2 board
+        (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ forM indices $ showCell2 board
     return ()
 
 showBoard :: MonadWidget t m => m ()
@@ -261,7 +261,7 @@ showBoard = do
     return ()
 
 main :: IO ()
-main = mainWidget showBoard2
+main = mainWidget showBoard
 
 elSvgns :: MonadWidget t m => Text -> Dynamic t (Map Text Text) -> m a -> m (El t, a)
 elSvgns = elDynAttrNS' (Just "http://www.w3.org/2000/svg")
