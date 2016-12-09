@@ -26,7 +26,7 @@ w :: Int
 w =  32
 
 h :: Int
-h = 64
+h = 16
 
 cellSize :: Int
 cellSize = 20
@@ -242,6 +242,11 @@ showBoard2 = do
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ forM indices $ showCell2 board
     return ()
 
+gameOver :: Board -> Bool
+gameOver board = 
+    let cellList = (fmap snd . toList) board
+    in (not.null.filter (\c -> exposed c && mined c)) cellList
+
 showBoard :: MonadWidget t m => m (Dynamic t Bool)
 showBoard = do
     gen <- liftIO getStdGen
@@ -255,16 +260,12 @@ showBoard = do
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) eventMap
         let cellMap = fmap (fmap (fmap snd)) eventAndCellMap
         cm <- cellMap 
-    let cellPosList  = (fmap toList) cm
-        cellList = fmap (fmap snd) cellPosList
-        exposedMines = fmap (filter (\c -> exposed c && mined c)) cellList
-        gameOver = fmap ((/=0).length) exposedMines
-    return gameOver
+    return $ fmap gameOver cm
 
 main :: IO ()
 main = mainWidget $ do
                         gameOver <- showBoard
-                        dyn (fmap (\b -> if b then text "gameover" else text "keepgoing") (gameOver) )
+                        dyn (fmap (\b -> if b then text "gameover" else text "keepgoing") gameOver )
                         return ()
 
 elSvgns :: MonadWidget t m => Text -> Dynamic t (Map Text Text) -> m a -> m (El t, a)
