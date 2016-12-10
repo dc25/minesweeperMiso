@@ -7,7 +7,7 @@ import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State (State, state, runState)
 import Data.Map as DM (Map, toList, fromList, elems, lookup, findWithDefault, insert, mapWithKey, (!))
-import Data.Text (Text, pack)
+import Data.Text as DT (Text, pack, append)
 import Data.Functor.Misc (dmapToMap, mapWithFunctorToDMap)
 import Data.Traversable (forM)
 
@@ -23,10 +23,10 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  32
+w =  40
 
 h :: Int
-h = 16
+h = 80
 
 cellSize :: Int
 cellSize = 20
@@ -217,30 +217,6 @@ boardAttrs = fromList
                  , ("style" , "border:solid; margin:8em")
                  , ("oncontextmenu", "return false;")
                  ]
-
-showCell2 :: forall t m. MonadWidget t m => Dynamic t (Map Pos Cell) -> Pos -> m (Event t Msg)
-showCell2 dBoard pos = do
-    let dCell = fmap (findWithDefault (Cell False False False 0) pos) dBoard
-    ev2 :: Event t (Event t Msg) <- dyn (fmap (showCell pos) dCell)
-    ev3 :: Behavior t (Event t Msg) <- hold never ev2
-    let ev4 :: Event t Msg = switch ev3
-    return ev4
-
-updateBoard :: Msg -> Board -> Board
-updateBoard msg oldBoard = 
-        let updates = fromPick msg oldBoard 
-            updater b (p, Just c) = insert p c b
-        in foldl updater oldBoard updates
-
-showBoard2 :: forall t m. MonadWidget t m => m ()
-showBoard2 = do 
-    gen <- liftIO getStdGen
-    rec 
-        let indices = [(x,y) | x <- [0..w-1], y <- [0..h-1]] 
-            (initialBoard, _)  = runRand (initBoard indices) gen
-        board <- foldDyn updateBoard initialBoard (leftmost ev)
-        (_, ev) <- elSvgns "svg" (constDyn boardAttrs) $ forM indices $ showCell2 board
-    return ()
 
 gameOver :: Board -> Bool
 gameOver board = 
