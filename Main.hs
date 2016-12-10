@@ -23,10 +23,10 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  40
+w =  10
 
 h :: Int
-h = 80
+h = 20
 
 cellSize :: Int
 cellSize = 20
@@ -219,9 +219,7 @@ boardAttrs = fromList
                  ]
 
 gameOver :: Board -> Bool
-gameOver board = 
-    let cellList = (fmap snd . toList) board
-    in (any (\c -> exposed c && mined c)) cellList
+gameOver board = any (\c -> exposed c && mined c) $ (fmap snd . toList) board
 
 showBoard :: MonadWidget t m => m (Dynamic t Bool)
 showBoard = do
