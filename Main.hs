@@ -23,10 +23,10 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  10
+w =  20
 
 h :: Int
-h = 20
+h = 10
 
 cellSize :: Int
 cellSize = 20
@@ -79,8 +79,8 @@ groupAttrs (x,y) =
              ] 
 
 showSquare :: MonadWidget t m => Cell -> m [El t]
-showSquare c = do
-    (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs c) $ return ()
+showSquare cell = do
+    (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs cell) $ return ()
     return [rEl]
 
 showMine :: MonadWidget t m => Pos -> m [El t]
@@ -136,7 +136,7 @@ showText count = do
     return []
 
 showCellDetail :: MonadWidget t m => Pos -> Cell -> m [El t]
-showCellDetail pos c@(Cell mined exposed flagged mines) = 
+showCellDetail pos (Cell mined exposed flagged mines) = 
     case (  mined, exposed, flagged, 0 == mines) of
          (      _,       _,    True,     _) -> showFlag pos 
          (   True,    True,       _,     _) -> showMine pos 
@@ -150,16 +150,16 @@ mouseEv pos el =
     in [l_rEv, r_rEv]
 
 showCell :: MonadWidget t m => Pos -> Cell -> m (Event t Msg)
-showCell pos c = 
+showCell pos cell = 
     fmap snd $ elSvgns "g"  (constDyn $ groupAttrs pos) $ do
-        rEl <- showSquare c
-        dEl <- showCellDetail pos c 
+        rEl <- showSquare cell
+        dEl <- showCellDetail pos cell 
         return $ leftmost $ concatMap (mouseEv pos) (rEl ++ dEl)
 
 showAndReturnCell :: MonadWidget t m => Pos -> Cell -> m (Event t Msg, Cell)
-showAndReturnCell pos c = do
-    ev <- showCell pos c
-    return (ev,c)
+showAndReturnCell pos cell = do
+    ev <- showCell pos cell
+    return (ev,cell)
 
 adjacents :: Pos -> [Pos]
 adjacents (x,y) = 
@@ -173,42 +173,42 @@ mineCount :: Board -> Pos -> Int
 mineCount board pos  = 
     length $ filter mined $ (board !) <$> adjacents pos
 
-fromLeftPickM :: Pos -> State Board [(Pos, Maybe Cell)]
-fromLeftPickM pos = 
+expose :: Pos -> State Board [(Pos, Maybe Cell)]
+expose pos = 
     state $
         \board ->
             let indices = adjacents pos
                 count = length $ filter mined $ fmap (board !) indices
-                c = board ! pos
+                cell = board ! pos
                 
-                updatedCell = if flagged c -- can't expose a flagged cell.
-                              then c
-                              else c {exposed=True, mines = count} 
+                updatedCell = if flagged cell -- can't expose a flagged cell.
+                              then cell
+                              else cell {exposed=True, mines = count} 
 
                 updatedBoard = insert pos updatedCell board 
 
-                checkList = (if exposed c || flagged c || mined c || count /= 0 
+                checkList = (if exposed cell || flagged cell || mined cell || count /= 0 
                              then [] 
                              else indices 
                              )
 
-                neighborUpdater = mapM fromLeftPickM checkList
+                neighborUpdater = mapM expose checkList
                 (updatedNeighbors, updatedNeighborsBoard) = runState neighborUpdater updatedBoard
             in ((pos, Just updatedCell) : concat updatedNeighbors, updatedNeighborsBoard)
 
 fromPick :: Msg -> Board ->[(Pos, Maybe Cell)]
-fromPick (LeftPick p) board = 
-    let (nc,_) = runState (fromLeftPickM p) board
+fromPick (LeftPick pos) board = 
+    let (nc,_) = runState (expose pos) board
     in nc
 
 fromPick (RightPick pos ) board = 
-    let c = board ! pos
-    in if exposed c
+    let cell = board ! pos
+    in if exposed cell
        then [] -- can't flag a cell that's already exposed.
-       else [(pos, Just c {flagged=not $ flagged c})]
+       else [(pos, Just cell {flagged=not $ flagged cell})]
 
 reactToPick :: (Board,Msg) -> Map Pos (Maybe Cell)
-reactToPick (b,c) = fromList $ fromPick c b
+reactToPick (b,cell) = fromList $ fromPick cell b
 
 boardAttrs :: Map Text Text
 boardAttrs = fromList 
@@ -219,7 +219,7 @@ boardAttrs = fromList
                  ]
 
 gameOver :: Board -> Bool
-gameOver board = any (\c -> exposed c && mined c) $ (fmap snd . toList) board
+gameOver board = any (\cell -> exposed cell && mined cell) $ (fmap snd . toList) board
 
 showBoard :: MonadWidget t m => m (Dynamic t Bool)
 showBoard = do
