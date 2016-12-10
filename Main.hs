@@ -221,7 +221,7 @@ boardAttrs = fromList
 gameOver :: Board -> Bool
 gameOver board = 
     let cellList = (fmap snd . toList) board
-    in (not.null.filter (\c -> exposed c && mined c)) cellList
+    in (any (\c -> exposed c && mined c)) cellList
 
 showBoard :: MonadWidget t m => m (Dynamic t Bool)
 showBoard = do
