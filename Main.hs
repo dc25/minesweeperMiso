@@ -173,6 +173,11 @@ mineCount :: Board -> Pos -> Int
 mineCount board pos  = 
     length $ filter mined $ (board !) <$> adjacents pos
 
+exposeMines :: State Board [(Pos, Maybe Cell)]
+exposeMines = 
+    state $
+        \board -> ([((0,0), Nothing)],board)
+
 expose :: Pos -> State Board [(Pos, Maybe Cell)]
 expose pos = 
     state $
