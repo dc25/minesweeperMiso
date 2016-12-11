@@ -170,8 +170,7 @@ adjacents (x,y) =
              , xx < w, yy < h]
 
 mineCount :: Board -> Pos -> Int
-mineCount board pos  = 
-    length $ filter mined $ (board !) <$> adjacents pos
+mineCount board pos  = length $ filter mined $ (board !) <$> adjacents pos
 
 exposeCellList :: [(Pos,Cell)] -> Board -> ([(Pos,Maybe Cell)], Board)
 exposeCellList exp board = 
@@ -204,9 +203,7 @@ exposeCellsF pos board =
         indices = adjacents pos
         count = length $ filter mined $ fmap (board !) indices
 
-        checkList = if m || e || f || count /= 0 
-                    then [] 
-                    else indices 
+        checkList = if m || e || f || count /= 0 then [] else indices 
 
         exposer = do
             exposedCell <- exposeCell pos cell count
