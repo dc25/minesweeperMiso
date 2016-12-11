@@ -14,7 +14,7 @@ import Data.Traversable (forM)
 data Cell = Cell { mined :: Bool 
                  , exposed :: Bool
                  , flagged :: Bool
-                 , mines :: Int
+                 , mineCount :: Int
                  } deriving Show
 
 type Pos = (Int, Int)
@@ -23,7 +23,7 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  16
+w =  32
 
 h :: Int
 h = 16
@@ -136,11 +136,11 @@ showText count = do
     return []
 
 showCellDetail :: MonadWidget t m => Pos -> Cell -> m [El t]
-showCellDetail pos (Cell mined exposed flagged mines) = 
-    case (  mined, exposed, flagged, 0 == mines) of
+showCellDetail pos (Cell mined exposed flagged mineCount) = 
+    case (  mined, exposed, flagged, 0 == mineCount) of
          (      _,       _,    True,     _) -> showFlag pos 
          (   True,    True,       _,     _) -> showMine pos 
-         (      _,    True,       _, False) -> showText mines
+         (      _,    True,       _, False) -> showText mineCount
          (      _,       _,       _,     _) -> return []
 
 mouseEv :: Reflex t => Pos -> El t -> [Event t Msg]
@@ -169,32 +169,28 @@ adjacents (x,y) =
              , xx >= 0, yy >= 0
              , xx < w, yy < h]
 
-exposeCellList :: [(Pos,Cell)] -> Board -> ([(Pos,Maybe Cell)], Board)
-exposeCellList exp board = 
+exposeCellList :: [(Pos,Cell)] -> State Board [(Pos, Maybe Cell)]
+exposeCellList exp = do
+    board <- get
     let exposedMaybe = fmap (\(p,c) -> (p, Just c)) exp
-        newBoard = foldl (\b (p,c) -> insert p c b) board exp
-    in (exposedMaybe, newBoard)
+    put $ foldl (\b (p,c) -> insert p c b) board exp
+    return $ exposedMaybe
 
 exposeMines :: State Board [(Pos, Maybe Cell)]
 exposeMines = do
     board <- get
     let toExpose = filter (\(pos,cell) -> (not.exposed) cell && mined cell) $ toList board
         exp = fmap (\(p,c) -> (p, c {exposed = True})) toExpose
-        (exposedMaybe, newBoard) = exposeCellList exp board
-    put newBoard
-    return exposedMaybe
+    exposeCellList exp 
 
 exposeSelection :: Pos -> Cell -> Int -> State Board [(Pos, Maybe Cell)]
 exposeSelection pos cell count = do
     board <- get
     let cell = board ! pos
         toExpose = if flagged cell then [] else [(pos,cell)]
-        exp = fmap (\(p,c) -> (p, c {exposed = True, mines = count})) toExpose
-        (exposedMaybe, newBoard) = exposeCellList exp board
-    put newBoard
-    return exposedMaybe
+        exp = fmap (\(p,c) -> (p, c {exposed = True, mineCount = count})) toExpose
+    exposeCellList exp 
     
-
 exposeCells :: Pos -> State Board [(Pos, Maybe Cell)]
 exposeCells pos = do
     board <- get
