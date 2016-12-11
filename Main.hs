@@ -23,10 +23,10 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  20
+w =  40
 
 h :: Int
-h = 10
+h = 50
 
 cellSize :: Int
 cellSize = 20
@@ -173,37 +173,58 @@ mineCount :: Board -> Pos -> Int
 mineCount board pos  = 
     length $ filter mined $ (board !) <$> adjacents pos
 
-exposeMines :: State Board [(Pos, Maybe Cell)]
-exposeMines = 
-    state $
-        \board -> ([((0,0), Nothing)],board)
+exposeMinesF :: Board -> ([(Pos,Maybe Cell)], Board)
+exposeMinesF board = 
+        let unexposedMines = filter (\(pos,cell) -> (not.exposed) cell && mined cell) $ toList board
+            nowExposed = fmap (\(p,Cell m e f mc) -> (p, Cell m True f mc)) unexposedMines
+            nowExposedMaybes = fmap (\(p,c) -> (p, Just c)) nowExposed
+            newBoard = foldl (\b (p,c) -> insert p c b) board nowExposed
+        in (nowExposedMaybes, newBoard)
+    
 
-expose :: Pos -> State Board [(Pos, Maybe Cell)]
-expose pos = 
-    state $
-        \board ->
+exposeMines :: State Board [(Pos, Maybe Cell)]
+exposeMines = state exposeMinesF
+
+leaveUnchangedF :: Board -> ([(Pos,Maybe Cell)], Board)
+leaveUnchangedF board = ([], board)
+
+leaveUnchanged :: State Board [(Pos, Maybe Cell)]
+leaveUnchanged = state leaveUnchangedF
+
+exposeCellF :: Pos -> Board -> ([(Pos,Maybe Cell)], Board)
+exposeCellF pos board = 
             let indices = adjacents pos
                 count = length $ filter mined $ fmap (board !) indices
-                cell = board ! pos
+                cell@(Cell m e f mc) = board ! pos
                 
-                updatedCell = if flagged cell -- can't expose a flagged cell.
+                updatedCell = if f -- can't expose a flagged cell.
                               then cell
                               else cell {exposed=True, mines = count} 
 
                 updatedBoard = insert pos updatedCell board 
 
-                checkList = (if exposed cell || flagged cell || mined cell || count /= 0 
+                checkList = (if m || e || f || count /= 0 
                              then [] 
                              else indices 
                              )
 
-                neighborUpdater = mapM expose checkList
+                neighborUpdater = (mapM exposeCell checkList) 
                 (updatedNeighbors, updatedNeighborsBoard) = runState neighborUpdater updatedBoard
-            in ((pos, Just updatedCell) : concat updatedNeighbors, updatedNeighborsBoard)
+
+                newlyExposed = (pos, Just updatedCell) : concat updatedNeighbors
+
+                mineExposer = if (m) then exposeMines else leaveUnchanged
+                (exposedMines, exposedMinesBoard) = runState mineExposer updatedNeighborsBoard
+
+            in (exposedMines ++ newlyExposed , exposedMinesBoard)
+
+
+exposeCell :: Pos -> State Board [(Pos, Maybe Cell)]
+exposeCell pos = state $ exposeCellF pos
 
 fromPick :: Msg -> Board ->[(Pos, Maybe Cell)]
 fromPick (LeftPick pos) board = 
-    let (nc,_) = runState (expose pos) board
+    let (nc,_) = runState (exposeCell pos) board
     in nc
 
 fromPick (RightPick pos ) board = 
