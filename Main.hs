@@ -187,15 +187,15 @@ exposeMinesF board =
 exposeMines :: State Board [(Pos, Maybe Cell)]
 exposeMines = state exposeMinesF
 
-exposeCellF :: Pos -> Cell -> Int -> Board -> ([(Pos,Maybe Cell)], Board)
-exposeCellF pos cell count board = 
+exposeSelectionF :: Pos -> Cell -> Int -> Board -> ([(Pos,Maybe Cell)], Board)
+exposeSelectionF pos cell count board = 
     let cell = board ! pos
         toExpose = if flagged cell then [] else [(pos,cell)]
         exp = fmap (\(p,c) -> (p, c {exposed = True, mines = count})) toExpose
     in exposeCellList exp board
 
-exposeCell :: Pos -> Cell -> Int -> State Board [(Pos, Maybe Cell)]
-exposeCell pos cell count = state $ exposeCellF pos cell count
+exposeSelection :: Pos -> Cell -> Int -> State Board [(Pos, Maybe Cell)]
+exposeSelection pos cell count = state $ exposeSelectionF pos cell count
 
 exposeCellsF :: Pos -> Board -> ([(Pos,Maybe Cell)], Board)
 exposeCellsF pos board = 
@@ -206,10 +206,10 @@ exposeCellsF pos board =
         checkList = if m || e || f || count /= 0 then [] else indices 
 
         exposer = do
-            exposedCell <- exposeCell pos cell count
+            exposedSelection <- exposeSelection pos cell count
             exposedNeighbors <- mapM exposeCells checkList 
             exposedMines <- if m then exposeMines else return []
-            return $ exposedCell ++ concat exposedNeighbors ++ exposedMines
+            return $ exposedSelection ++ concat exposedNeighbors ++ exposedMines
 
     in runState exposer board
 
