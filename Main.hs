@@ -23,10 +23,10 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  40
+w =  32
 
 h :: Int
-h = 50
+h = 16
 
 cellSize :: Int
 cellSize = 20
@@ -173,58 +173,55 @@ mineCount :: Board -> Pos -> Int
 mineCount board pos  = 
     length $ filter mined $ (board !) <$> adjacents pos
 
+exposeCellList :: [(Pos,Cell)] -> Board -> ([(Pos,Maybe Cell)], Board)
+exposeCellList exp board = 
+    let exposedMaybe = fmap (\(p,c) -> (p, Just c)) exp
+        newBoard = foldl (\b (p,c) -> insert p c b) board exp
+    in (exposedMaybe, newBoard)
+
 exposeMinesF :: Board -> ([(Pos,Maybe Cell)], Board)
 exposeMinesF board = 
-        let unexposedMines = filter (\(pos,cell) -> (not.exposed) cell && mined cell) $ toList board
-            nowExposed = fmap (\(p,Cell m e f mc) -> (p, Cell m True f mc)) unexposedMines
-            nowExposedMaybes = fmap (\(p,c) -> (p, Just c)) nowExposed
-            newBoard = foldl (\b (p,c) -> insert p c b) board nowExposed
-        in (nowExposedMaybes, newBoard)
-    
+    let toExpose = filter (\(pos,cell) -> (not.exposed) cell && mined cell) $ toList board
+        exp = fmap (\(p,c) -> (p, c {exposed = True})) toExpose
+    in exposeCellList exp board
 
 exposeMines :: State Board [(Pos, Maybe Cell)]
 exposeMines = state exposeMinesF
 
-leaveUnchangedF :: Board -> ([(Pos,Maybe Cell)], Board)
-leaveUnchangedF board = ([], board)
+exposeCellF :: Pos -> Cell -> Int -> Board -> ([(Pos,Maybe Cell)], Board)
+exposeCellF pos cell count board = 
+    let cell = board ! pos
+        toExpose = if flagged cell then [] else [(pos,cell)]
+        exp = fmap (\(p,c) -> (p, c {exposed = True, mines = count})) toExpose
+    in exposeCellList exp board
 
-leaveUnchanged :: State Board [(Pos, Maybe Cell)]
-leaveUnchanged = state leaveUnchangedF
+exposeCell :: Pos -> Cell -> Int -> State Board [(Pos, Maybe Cell)]
+exposeCell pos cell count = state $ exposeCellF pos cell count
 
-exposeCellF :: Pos -> Board -> ([(Pos,Maybe Cell)], Board)
-exposeCellF pos board = 
-            let indices = adjacents pos
-                count = length $ filter mined $ fmap (board !) indices
-                cell@(Cell m e f mc) = board ! pos
-                
-                updatedCell = if f -- can't expose a flagged cell.
-                              then cell
-                              else cell {exposed=True, mines = count} 
+exposeCellsF :: Pos -> Board -> ([(Pos,Maybe Cell)], Board)
+exposeCellsF pos board = 
+    let cell@(Cell m e f mc) = board ! pos
+        indices = adjacents pos
+        count = length $ filter mined $ fmap (board !) indices
 
-                updatedBoard = insert pos updatedCell board 
+        checkList = if m || e || f || count /= 0 
+                    then [] 
+                    else indices 
 
-                checkList = (if m || e || f || count /= 0 
-                             then [] 
-                             else indices 
-                             )
+        exposer = do
+            exposedCell <- exposeCell pos cell count
+            exposedNeighbors <- mapM exposeCells checkList 
+            exposedMines <- if m then exposeMines else return []
+            return $ exposedCell ++ concat exposedNeighbors ++ exposedMines
 
-                neighborUpdater = (mapM exposeCell checkList) 
-                (updatedNeighbors, updatedNeighborsBoard) = runState neighborUpdater updatedBoard
+    in runState exposer board
 
-                newlyExposed = (pos, Just updatedCell) : concat updatedNeighbors
-
-                mineExposer = if (m) then exposeMines else leaveUnchanged
-                (exposedMines, exposedMinesBoard) = runState mineExposer updatedNeighborsBoard
-
-            in (exposedMines ++ newlyExposed , exposedMinesBoard)
-
-
-exposeCell :: Pos -> State Board [(Pos, Maybe Cell)]
-exposeCell pos = state $ exposeCellF pos
+exposeCells :: Pos -> State Board [(Pos, Maybe Cell)]
+exposeCells pos = state $ exposeCellsF pos
 
 fromPick :: Msg -> Board ->[(Pos, Maybe Cell)]
 fromPick (LeftPick pos) board = 
-    let (nc,_) = runState (exposeCell pos) board
+    let (nc,_) = runState (exposeCells pos) board
     in nc
 
 fromPick (RightPick pos ) board = 
