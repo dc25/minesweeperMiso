@@ -5,7 +5,7 @@ import Reflex
 import Reflex.Dom
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
-import Control.Monad.State (State, state, runState)
+import Control.Monad.State (State, state, runState, get, put)
 import Data.Map as DM (Map, toList, fromList, elems, lookup, findWithDefault, insert, mapWithKey, (!))
 import Data.Text as DT (Text, pack, append)
 import Data.Functor.Misc (dmapToMap, mapWithFunctorToDMap)
@@ -23,7 +23,7 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  32
+w =  16
 
 h :: Int
 h = 16
@@ -169,52 +169,46 @@ adjacents (x,y) =
              , xx >= 0, yy >= 0
              , xx < w, yy < h]
 
-mineCount :: Board -> Pos -> Int
-mineCount board pos  = length $ filter mined $ (board !) <$> adjacents pos
-
 exposeCellList :: [(Pos,Cell)] -> Board -> ([(Pos,Maybe Cell)], Board)
 exposeCellList exp board = 
     let exposedMaybe = fmap (\(p,c) -> (p, Just c)) exp
         newBoard = foldl (\b (p,c) -> insert p c b) board exp
     in (exposedMaybe, newBoard)
 
-exposeMinesF :: Board -> ([(Pos,Maybe Cell)], Board)
-exposeMinesF board = 
+exposeMines :: State Board [(Pos, Maybe Cell)]
+exposeMines = do
+    board <- get
     let toExpose = filter (\(pos,cell) -> (not.exposed) cell && mined cell) $ toList board
         exp = fmap (\(p,c) -> (p, c {exposed = True})) toExpose
-    in exposeCellList exp board
+        (exposedMaybe, newBoard) = exposeCellList exp board
+    put newBoard
+    return exposedMaybe
 
-exposeMines :: State Board [(Pos, Maybe Cell)]
-exposeMines = state exposeMinesF
-
-exposeSelectionF :: Pos -> Cell -> Int -> Board -> ([(Pos,Maybe Cell)], Board)
-exposeSelectionF pos cell count board = 
+exposeSelection :: Pos -> Cell -> Int -> State Board [(Pos, Maybe Cell)]
+exposeSelection pos cell count = do
+    board <- get
     let cell = board ! pos
         toExpose = if flagged cell then [] else [(pos,cell)]
         exp = fmap (\(p,c) -> (p, c {exposed = True, mines = count})) toExpose
-    in exposeCellList exp board
+        (exposedMaybe, newBoard) = exposeCellList exp board
+    put newBoard
+    return exposedMaybe
+    
 
-exposeSelection :: Pos -> Cell -> Int -> State Board [(Pos, Maybe Cell)]
-exposeSelection pos cell count = state $ exposeSelectionF pos cell count
-
-exposeCellsF :: Pos -> Board -> ([(Pos,Maybe Cell)], Board)
-exposeCellsF pos board = 
+exposeCells :: Pos -> State Board [(Pos, Maybe Cell)]
+exposeCells pos = do
+    board <- get
     let cell@(Cell m e f mc) = board ! pos
         indices = adjacents pos
         count = length $ filter mined $ fmap (board !) indices
-
         checkList = if m || e || f || count /= 0 then [] else indices 
 
-        exposer = do
-            exposedSelection <- exposeSelection pos cell count
-            exposedNeighbors <- mapM exposeCells checkList 
-            exposedMines <- if m then exposeMines else return []
-            return $ exposedSelection ++ concat exposedNeighbors ++ exposedMines
+    exposedSelection <- exposeSelection pos cell count
+    exposedNeighbors <- mapM exposeCells checkList 
+    exposedMines <- if m then exposeMines else return []
 
-    in runState exposer board
+    return $ exposedSelection ++ concat exposedNeighbors ++ exposedMines
 
-exposeCells :: Pos -> State Board [(Pos, Maybe Cell)]
-exposeCells pos = state $ exposeCellsF pos
 
 fromPick :: Msg -> Board ->[(Pos, Maybe Cell)]
 fromPick (LeftPick pos) board = 
