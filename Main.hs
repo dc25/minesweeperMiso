@@ -218,10 +218,10 @@ fromPick (RightPick pos ) = do
 
 reactToPick :: ((Board,Bool),Msg) -> Map Pos (Maybe Cell)
 reactToPick ((b,lost),msg) = 
-        if (lost) 
-        then mempty
-        else let (resultList,_) = runState (fromPick msg) b
-             in fromList resultList
+    if (lost) 
+    then mempty
+    else let (resultList,_) = runState (fromPick msg) b
+         in fromList resultList
 
 boardAttrs :: Map Text Text
 boardAttrs = fromList 
