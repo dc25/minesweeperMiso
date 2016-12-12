@@ -169,27 +169,22 @@ adjacents (x,y) =
              , xx >= 0, yy >= 0
              , xx < w, yy < h]
 
-insertCellList :: [(Pos,Cell)] -> State Board [(Pos, Maybe Cell)]
-insertCellList modifications = do
-    board <- get
-    let exposedMaybe = fmap (\(p,c) -> (p, Just c)) modifications
-    put $ foldl (\b (p,c) -> insert p c b) board modifications
-    return $ exposedMaybe
-
 exposeMines :: State Board [(Pos, Maybe Cell)]
 exposeMines = do
     board <- get
     let toExpose = filter (\(pos,cell) -> (not.exposed) cell && mined cell) $ toList board
-        modifications = fmap (\(p,c) -> (p, c {exposed = True})) toExpose
-    insertCellList modifications 
+        modifications = fmap (\(p,c) -> (p, Just $ c {exposed = True})) toExpose
+    put $ foldl (\b (p,Just c) -> insert p c b) board modifications
+    return modifications 
 
 exposeSelection :: Pos -> Cell -> Int -> State Board [(Pos, Maybe Cell)]
 exposeSelection pos cell count = do
     board <- get
     let cell = board ! pos
         toExpose = if flagged cell then [] else [(pos,cell)]
-        modifications = fmap (\(p,c) -> (p, c {exposed = True, mineCount = count})) toExpose
-    insertCellList modifications 
+        modifications = fmap (\(p,c) -> (p, Just $ c {exposed = True, mineCount = count})) toExpose
+    put $ foldl (\b (p,Just c) -> insert p c b) board modifications
+    return modifications 
     
 exposeCells :: Pos -> State Board [(Pos, Maybe Cell)]
 exposeCells pos = do
@@ -211,10 +206,11 @@ fromPick (LeftPick pos) = exposeCells pos
 fromPick (RightPick pos ) = do
     board <- get
     let cell = board ! pos
-        modCellList = if exposed cell 
-                      then [] -- can't flag a cell that's already exposed.  
-                      else [(pos, cell {flagged=not $ flagged cell})]
-    insertCellList modCellList
+        modifications = if exposed cell 
+                        then [] -- can't flag a cell that's already exposed.  
+                        else [(pos, Just $ cell {flagged=not $ flagged cell})]
+    put $ foldl (\b (p,Just c) -> insert p c b) board modifications
+    return modifications
 
 reactToPick :: ((Board,Bool),Msg) -> Map Pos (Maybe Cell)
 reactToPick ((b,lost),msg) = 
