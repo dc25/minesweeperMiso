@@ -6,10 +6,8 @@ import Reflex.Dom
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State (State, state, runState, get, put)
-import Data.Map as DM (Map, toList, fromList, elems, lookup, findWithDefault, insert, mapWithKey, (!))
-import Data.Text as DT (Text, pack, append)
-import Data.Functor.Misc (dmapToMap, mapWithFunctorToDMap)
-import Data.Traversable (forM)
+import Data.Map (Map, toList, fromList, elems, lookup, findWithDefault, insert, mapWithKey, (!))
+import Data.Text (Text, pack, append)
 
 data Cell = Cell { mined :: Bool 
                  , exposed :: Bool
@@ -30,6 +28,9 @@ h = 16
 
 cellSize :: Int
 cellSize = 20
+
+elSvgns :: MonadWidget t m => Text -> Dynamic t (Map Text Text) -> m a -> m (El t, a)
+elSvgns = elDynAttrNS' (Just "http://www.w3.org/2000/svg")
 
 mkCell :: RandomGen g => Rand g Cell
 mkCell = do
@@ -252,9 +253,6 @@ showBoard = do
 
 main :: IO ()
 main = mainWidget $ do
-                        gameOver <- showBoard
-                        dyn (fmap (\b -> if b then text "gameover" else text "keepgoing") gameOver )
-                        return ()
-
-elSvgns :: MonadWidget t m => Text -> Dynamic t (Map Text Text) -> m a -> m (El t, a)
-elSvgns = elDynAttrNS' (Just "http://www.w3.org/2000/svg")
+           gameOver <- showBoard
+           dyn (fmap (\b -> if b then text "gameover" else text "keepgoing") gameOver )
+           return ()
