@@ -62,10 +62,9 @@ cellAttrs cell =
 textAttrs :: Map Text Text
 textAttrs = 
     fromList [ ("x",             "0.5")
-             , ("y",             "0.6")
+             , ("y",             "0.87")
              , ("font-size",     "1.0" )
              , ("fill",          "blue" )
-             , ("alignment-baseline", "middle" )
              , ("text-anchor",        "middle" )
              , ("oncontextmenu",      "return false;")
              ] 
@@ -169,8 +168,8 @@ adjacents (x,y) =
              , xx >= 0, yy >= 0
              , xx < w, yy < h]
 
-exposeCellList :: [(Pos,Cell)] -> State Board [(Pos, Maybe Cell)]
-exposeCellList exp = do
+insertCellList :: [(Pos,Cell)] -> State Board [(Pos, Maybe Cell)]
+insertCellList exp = do
     board <- get
     let exposedMaybe = fmap (\(p,c) -> (p, Just c)) exp
     put $ foldl (\b (p,c) -> insert p c b) board exp
@@ -181,7 +180,7 @@ exposeMines = do
     board <- get
     let toExpose = filter (\(pos,cell) -> (not.exposed) cell && mined cell) $ toList board
         exp = fmap (\(p,c) -> (p, c {exposed = True})) toExpose
-    exposeCellList exp 
+    insertCellList exp 
 
 exposeSelection :: Pos -> Cell -> Int -> State Board [(Pos, Maybe Cell)]
 exposeSelection pos cell count = do
@@ -189,7 +188,7 @@ exposeSelection pos cell count = do
     let cell = board ! pos
         toExpose = if flagged cell then [] else [(pos,cell)]
         exp = fmap (\(p,c) -> (p, c {exposed = True, mineCount = count})) toExpose
-    exposeCellList exp 
+    insertCellList exp 
     
 exposeCells :: Pos -> State Board [(Pos, Maybe Cell)]
 exposeCells pos = do
@@ -205,20 +204,23 @@ exposeCells pos = do
 
     return $ exposedSelection ++ concat exposedNeighbors ++ exposedMines
 
+fromPick :: Msg -> State Board [(Pos, Maybe Cell)]
+fromPick (LeftPick pos) = exposeCells pos
 
-fromPick :: Msg -> Board ->[(Pos, Maybe Cell)]
-fromPick (LeftPick pos) board = 
-    let (nc,_) = runState (exposeCells pos) board
-    in nc
-
-fromPick (RightPick pos ) board = 
+fromPick (RightPick pos ) = do
+    board <- get
     let cell = board ! pos
-    in if exposed cell
-       then [] -- can't flag a cell that's already exposed.
-       else [(pos, Just cell {flagged=not $ flagged cell})]
+        modCellList = if exposed cell 
+                      then [] -- can't flag a cell that's already exposed.  
+                      else [(pos, cell {flagged=not $ flagged cell})]
+    insertCellList modCellList
 
-reactToPick :: (Board,Msg) -> Map Pos (Maybe Cell)
-reactToPick (b,cell) = fromList $ fromPick cell b
+reactToPick :: ((Board,Bool),Msg) -> Map Pos (Maybe Cell)
+reactToPick ((b,lost),msg) = 
+        if (lost) 
+        then mempty
+        else let (resultList,_) = runState (fromPick msg) b
+             in fromList resultList
 
 boardAttrs :: Map Text Text
 boardAttrs = fromList 
@@ -237,14 +239,16 @@ showBoard = do
     let (initial, _)  = runRand mkBoard gen
     rec 
         let pick = switch $ (leftmost . elems) <$> current ev
-            pickWithCells = attachPromptlyDynWith (,) cm pick
+            pickWithCells = attachPromptlyDynWith (,) boardAndStatus pick
             updateEv = fmap reactToPick pickWithCells
             eventAndCellMap = listHoldWithKey initial updateEv showAndReturnCell 
             eventMap = fmap (fmap (fmap fst)) eventAndCellMap
         (_, ev) <- elSvgns "svg" (constDyn boardAttrs) eventMap
         let cellMap = fmap (fmap (fmap snd)) eventAndCellMap
         cm <- cellMap 
-    return $ fmap gameOver cm
+        let lost = fmap gameOver cm
+            boardAndStatus = zipDynWith (,) cm lost
+    return lost
 
 main :: IO ()
 main = mainWidget $ do
