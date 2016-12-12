@@ -169,26 +169,26 @@ adjacents (x,y) =
              , xx < w, yy < h]
 
 insertCellList :: [(Pos,Cell)] -> State Board [(Pos, Maybe Cell)]
-insertCellList exp = do
+insertCellList modifications = do
     board <- get
-    let exposedMaybe = fmap (\(p,c) -> (p, Just c)) exp
-    put $ foldl (\b (p,c) -> insert p c b) board exp
+    let exposedMaybe = fmap (\(p,c) -> (p, Just c)) modifications
+    put $ foldl (\b (p,c) -> insert p c b) board modifications
     return $ exposedMaybe
 
 exposeMines :: State Board [(Pos, Maybe Cell)]
 exposeMines = do
     board <- get
     let toExpose = filter (\(pos,cell) -> (not.exposed) cell && mined cell) $ toList board
-        exp = fmap (\(p,c) -> (p, c {exposed = True})) toExpose
-    insertCellList exp 
+        modifications = fmap (\(p,c) -> (p, c {exposed = True})) toExpose
+    insertCellList modifications 
 
 exposeSelection :: Pos -> Cell -> Int -> State Board [(Pos, Maybe Cell)]
 exposeSelection pos cell count = do
     board <- get
     let cell = board ! pos
         toExpose = if flagged cell then [] else [(pos,cell)]
-        exp = fmap (\(p,c) -> (p, c {exposed = True, mineCount = count})) toExpose
-    insertCellList exp 
+        modifications = fmap (\(p,c) -> (p, c {exposed = True, mineCount = count})) toExpose
+    insertCellList modifications 
     
 exposeCells :: Pos -> State Board [(Pos, Maybe Cell)]
 exposeCells pos = do
