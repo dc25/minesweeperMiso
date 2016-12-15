@@ -228,7 +228,7 @@ boardAttrs = fromList
                  ]
 
 gameOver :: Board -> Bool
-gameOver board = any (\cell -> exposed cell && mined cell) $ (fmap snd . toList) board
+gameOver board = any (\cell -> exposed cell && mined cell) board
 
 showBoard :: MonadWidget t m => m (Dynamic t Bool)
 showBoard = do
