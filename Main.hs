@@ -5,13 +5,15 @@ import Reflex
 import Reflex.Dom
 import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
 import Control.Monad.Trans (liftIO)
-import Control.Monad.State (State, state, runState, get, put)
-import Data.Map (Map, toList, fromList, elems, lookup, findWithDefault, insert, mapWithKey, (!))
-import Data.Text (Text, pack, append)
-import Data.Traversable (forM)
+import Control.Monad.State (State, runState, get, put)
+import Data.Map (Map, toList, fromList, elems, insert, (!))
+import Data.Text (Text, pack)
 
+import Pos
 import Svg
 import Smiley
+import Mine
+import Flag
 
 data Cell = Cell { mined :: Bool 
                  , exposed :: Bool
@@ -19,7 +21,6 @@ data Cell = Cell { mined :: Bool
                  , mineCount :: Int
                  } deriving Show
 
-type Pos = (Int, Int)
 type Board = Map Pos Cell
 
 data Msg = LeftPick Pos | RightPick Pos 
@@ -83,53 +84,6 @@ showSquare :: MonadWidget t m => Cell -> m [El t]
 showSquare cell = do
     (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs cell) $ return ()
     return [rEl]
-
-showMine :: MonadWidget t m => Pos -> m [El t]
-showMine pos = do
-    let mineAttrs = 
-            fromList [ ( "cx", "0.45" )
-                     , ( "cy", "0.55" )
-                     , ( "r",  "0.3" )
-                     , ( "style",        "fill:brown")
-                     , ("oncontextmenu", "return false;")
-                     ] 
-
-    (cEl,_) <- elSvgns "circle" (constDyn mineAttrs ) $ return ()
-
-    let stemAttrs = 
-            fromList [ ( "points", "0.65,0.15 0.85,0.35 0.65,0.55 0.45,0.35 " )
-                     , ( "style",        "fill:brown")
-                     , ("oncontextmenu", "return false;")
-                     ] 
-
-    (sEl,_) <- elSvgns "polygon" (constDyn stemAttrs ) $ return ()
-    (fEl,_) <- elSvgns "circle" (constDyn mineAttrs ) $ return ()
-
-    return [cEl, sEl]
-
-showFlag :: MonadWidget t m => Pos -> m [El t]
-showFlag pos = do
-    let flagAttrs = 
-            fromList [ ( "points", "0.20,0.40 0.70,0.55 0.70,0.25" )
-                     , ( "style",        "fill:red")
-                     , ("oncontextmenu", "return false;")
-                     ] 
-
-    (fEl,_) <- elSvgns "polygon" (constDyn flagAttrs ) $ return ()
-
-    let poleAttrs = 
-            fromList [ ( "x1", "0.70" )
-                     , ( "y1", "0.25" )
-                     , ( "x2", "0.70" )
-                     , ( "y2", "0.85" )
-                     , ( "stroke-width", ".07")
-                     , ( "stroke", "black")
-                     , ("oncontextmenu", "return false;")
-                     ] 
-
-    (pEl,_) <- elSvgns "line" (constDyn poleAttrs ) $ return ()
-
-    return [fEl, pEl]
 
 showText :: MonadWidget t m => Int -> m [El t]
 showText count = do
