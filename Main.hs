@@ -21,10 +21,10 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  32
+w =  40
 
 h :: Int
-h = 16
+h = 80
 
 cellSize :: Int
 cellSize = 20
@@ -212,9 +212,9 @@ fromPick (RightPick pos ) = do
     put $ foldl (\b (p,Just c) -> insert p c b) board modifications
     return modifications
 
-reactToPick :: ((Board,Bool),Msg) -> Map Pos (Maybe Cell)
-reactToPick ((b,lost),msg) = 
-    if lost 
+reactToPick :: (Board,Msg) -> Map Pos (Maybe Cell)
+reactToPick (b,msg) = 
+    if gameOver b -- consolidating gameOver calls didn't affect perf.
     then mempty
     else let (resultList,_) = runState (fromPick msg) b
          in fromList resultList
@@ -228,7 +228,7 @@ boardAttrs = fromList
                  ]
 
 gameOver :: Board -> Bool
-gameOver board = any (\cell -> exposed cell && mined cell) board
+gameOver = any (\cell -> exposed cell && mined cell) 
 
 showBoard :: MonadWidget t m => m ()
 showBoard = do
@@ -236,14 +236,12 @@ showBoard = do
     let (initial, _)  = runRand mkBoard gen
     rec 
         let pick = switch $ (leftmost . elems) <$> current eventMap
-            pickWithCells = attachPromptlyDynWith (,) boardAndStatus pick
+            pickWithCells = attachPromptlyDynWith (,) cellMap pick
             updateEv = fmap reactToPick pickWithCells
         (_, eventAndCellMap ) <- elSvgns "svg" (constDyn boardAttrs) $ listHoldWithKey initial updateEv showAndReturnCell 
         let cellMap = fmap (fmap snd) eventAndCellMap
             eventMap = fmap (fmap fst) eventAndCellMap
-            lost = fmap gameOver cellMap
-            boardAndStatus = zipDynWith (,) cellMap lost
-    dyn (fmap (\b -> if b then text "gameover" else text "keepgoing") lost )
+    dyn (fmap (\b -> if gameOver b then text "gameover" else text "keepgoing") cellMap )
     return ()
 
 main :: IO ()
