@@ -21,10 +21,10 @@ type Board = Map Pos Cell
 data Msg = LeftPick Pos | RightPick Pos 
 
 w :: Int
-w =  40
+w =  32
 
 h :: Int
-h = 80
+h = 16
 
 cellSize :: Int
 cellSize = 20
@@ -227,6 +227,46 @@ boardAttrs = fromList
                  , ("oncontextmenu", "return false;")
                  ]
 
+showFace :: MonadWidget t m => Bool -> m ()
+showFace lost = do
+        let sz = 100::Int
+        elSvgns "svg" (constDyn $ fromList [ ("width", "100")
+                                           , ("height", "100")  
+                                           ]) $ 
+            elSvgns "g" (constDyn $ fromList [ ("transform", pack $     "scale (" ++ show sz ++ ", " ++ show sz ++ ") " ++ "translate (0.5, 0.5)"  ) ]) $ do
+
+                elSvgns "circle" (constDyn $ 
+                                 fromList [ ( "cx", "0.0" )
+                                          , ( "cy", "0.0" )
+                                          , ( "r",  "0.4" ) 
+                                          , ("style", "fill:yellow") 
+                                          , ("stroke", "black") 
+                                          , ("stroke-width", "0.02") 
+                                          ]
+                                 ) $ return ()
+
+                elSvgns "circle" (constDyn $ 
+                                 fromList [ ( "cx", "0.15" )
+                                          , ( "cy", "-0.1" )
+                                          , ( "r",  "0.07" ) 
+                                          , ("style", "fill:yellow") 
+                                          , ("stroke", "black") 
+                                          , ("stroke-width", "0.02") 
+                                          ]
+                                 ) $ return ()
+
+                elSvgns "circle" (constDyn $ 
+                                 fromList [ ( "cx", "-0.15" )
+                                          , ( "cy", "-0.1" )
+                                          , ( "r",  "0.07" ) 
+                                          , ("style", "fill:yellow") 
+                                          , ("stroke", "black") 
+                                          , ("stroke-width", "0.02") 
+                                          ]
+                                 ) $ return ()
+
+        return ()
+
 gameOver :: Board -> Bool
 gameOver = any (\cell -> exposed cell && mined cell) 
 
@@ -235,13 +275,13 @@ showBoard = do
     gen <- liftIO getStdGen
     let (initial, _)  = runRand mkBoard gen
     rec 
+        dyn (fmap (\b -> showFace (gameOver b)) cellMap )
         let pick = switch $ (leftmost . elems) <$> current eventMap
             pickWithCells = attachPromptlyDynWith (,) cellMap pick
             updateEv = fmap reactToPick pickWithCells
         (_, eventAndCellMap ) <- elSvgns "svg" (constDyn boardAttrs) $ listHoldWithKey initial updateEv showAndReturnCell 
         let cellMap = fmap (fmap snd) eventAndCellMap
             eventMap = fmap (fmap fst) eventAndCellMap
-    dyn (fmap (\b -> if gameOver b then text "gameover" else text "keepgoing") cellMap )
     return ()
 
 main :: IO ()
