@@ -265,6 +265,13 @@ showFace lost = do
                                           ]
                                  ) $ return ()
 
+                elSvgns "path" (constDyn $ 
+                                 fromList [ ("d", "M0.15,0.1 h-0.30,0.0")
+                                          , ("stroke", "black") 
+                                          , ("stroke-width", "0.02") 
+                                          ]
+                                 ) $ return ()
+
         return ()
 
 gameOver :: Board -> Bool
