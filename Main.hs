@@ -235,6 +235,7 @@ showFace lost = do
                                            ]) $ 
             elSvgns "g" (constDyn $ fromList [ ("transform", pack $     "scale (" ++ show sz ++ ", " ++ show sz ++ ") " ++ "translate (0.5, 0.5)"  ) ]) $ do
 
+                -- face outline
                 elSvgns "circle" (constDyn $ 
                                  fromList [ ( "cx", "0.0" )
                                           , ( "cy", "0.0" )
@@ -244,31 +245,33 @@ showFace lost = do
                                           , ("stroke-width", "0.02") 
                                           ]
                                  ) $ return ()
-
+                -- right eye
                 elSvgns "circle" (constDyn $ 
                                  fromList [ ( "cx", "0.15" )
                                           , ( "cy", "-0.1" )
-                                          , ( "r",  "0.07" ) 
+                                          , ( "r",  "0.08" ) 
                                           , ("style", "fill:yellow") 
                                           , ("stroke", "black") 
                                           , ("stroke-width", "0.02") 
                                           ]
                                  ) $ return ()
-
+                -- left eye
                 elSvgns "circle" (constDyn $ 
                                  fromList [ ( "cx", "-0.15" )
                                           , ( "cy", "-0.1" )
-                                          , ( "r",  "0.07" ) 
+                                          , ( "r",  "0.08" ) 
                                           , ("style", "fill:yellow") 
                                           , ("stroke", "black") 
                                           , ("stroke-width", "0.02") 
                                           ]
                                  ) $ return ()
 
+                -- smile
                 elSvgns "path" (constDyn $ 
-                                 fromList [ ("d", "M0.15,0.1 h-0.30,0.0")
+                                 fromList [ ("d", "M-0.15,0.15 a0.2,0.2 0 0 0 0.30,0.0")
                                           , ("stroke", "black") 
                                           , ("stroke-width", "0.02") 
+                                          , ("fill", "none") 
                                           ]
                                  ) $ return ()
 
@@ -277,8 +280,8 @@ showFace lost = do
 gameOver :: Board -> Bool
 gameOver = any (\cell -> exposed cell && mined cell) 
 
-showBoard :: MonadWidget t m => m ()
-showBoard = do
+main :: IO ()
+main = mainWidget $ do
     gen <- liftIO getStdGen
     let (initial, _)  = runRand mkBoard gen
     rec 
@@ -290,6 +293,3 @@ showBoard = do
         let cellMap = fmap (fmap snd) eventAndCellMap
             eventMap = fmap (fmap fst) eventAndCellMap
     return ()
-
-main :: IO ()
-main = mainWidget showBoard
