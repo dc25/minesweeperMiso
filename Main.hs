@@ -214,7 +214,7 @@ fromPick (RightPick pos ) = do
 
 reactToPick :: ((Board,Bool),Msg) -> Map Pos (Maybe Cell)
 reactToPick ((b,lost),msg) = 
-    if (lost) 
+    if lost 
     then mempty
     else let (resultList,_) = runState (fromPick msg) b
          in fromList resultList
@@ -230,25 +230,21 @@ boardAttrs = fromList
 gameOver :: Board -> Bool
 gameOver board = any (\cell -> exposed cell && mined cell) board
 
-showBoard :: MonadWidget t m => m (Dynamic t Bool)
+showBoard :: MonadWidget t m => m ()
 showBoard = do
     gen <- liftIO getStdGen
     let (initial, _)  = runRand mkBoard gen
     rec 
-        let pick = switch $ (leftmost . elems) <$> current ev
+        let pick = switch $ (leftmost . elems) <$> current eventMap
             pickWithCells = attachPromptlyDynWith (,) boardAndStatus pick
             updateEv = fmap reactToPick pickWithCells
-            eventAndCellMap = listHoldWithKey initial updateEv showAndReturnCell 
-            eventMap = fmap (fmap (fmap fst)) eventAndCellMap
-        (_, ev) <- elSvgns "svg" (constDyn boardAttrs) eventMap
-        let cellMap = fmap (fmap (fmap snd)) eventAndCellMap
-        cm <- cellMap 
-        let lost = fmap gameOver cm
-            boardAndStatus = zipDynWith (,) cm lost
-    return lost
+        (_, eventAndCellMap ) <- elSvgns "svg" (constDyn boardAttrs) $ listHoldWithKey initial updateEv showAndReturnCell 
+        let cellMap = fmap (fmap snd) eventAndCellMap
+            eventMap = fmap (fmap fst) eventAndCellMap
+            lost = fmap gameOver cellMap
+            boardAndStatus = zipDynWith (,) cellMap lost
+    dyn (fmap (\b -> if b then text "gameover" else text "keepgoing") lost )
+    return ()
 
 main :: IO ()
-main = mainWidget $ do
-           gameOver <- showBoard
-           dyn (fmap (\b -> if b then text "gameover" else text "keepgoing") gameOver )
-           return ()
+main = mainWidget showBoard
