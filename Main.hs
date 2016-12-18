@@ -8,6 +8,7 @@ import Control.Monad.Trans (liftIO)
 import Control.Monad.State (State, state, runState, get, put)
 import Data.Map (Map, toList, fromList, elems, lookup, findWithDefault, insert, mapWithKey, (!))
 import Data.Text (Text, pack, append)
+import Data.Traversable
 
 data Cell = Cell { mined :: Bool 
                  , exposed :: Bool
@@ -255,6 +256,7 @@ showFace lost = do
                                           , ("stroke-width", "0.02") 
                                           ]
                                  ) $ return ()
+
                 -- left eye
                 elSvgns "circle" (constDyn $ 
                                  fromList [ ( "cx", "-0.15" )
@@ -266,9 +268,41 @@ showFace lost = do
                                           ]
                                  ) $ return ()
 
-                -- smile
+                if lost then do
+                    -- eye crosses
+                    fmap head 
+                        (forM [ (ex, dx, dy)::(Float, Float, Float) 
+                                            | ex <- [-0.15, 0.15],
+                                              dx <- [-0.1, 0.1],
+                                              dy <- [-0.1, 0.1] ]
+                            ( \(ex, px,py) -> elSvgns "path" (constDyn $ 
+                                             fromList [ ("d", pack $ "M " ++ show ex ++ " -0.1 l " ++ show px ++ " " ++ show py)
+                                                      , ("stroke", "black") 
+                                                      , ("stroke-width", "0.02") 
+                                                      , ("fill", "none") 
+                                                      ]
+                                             ) $ return () ) )
+
+                else do
+                    -- right eyeball
+                    elSvgns "circle" (constDyn $ 
+                                     fromList [ ( "cx", "0.15" )
+                                              , ( "cy", "-0.1" )
+                                              , ( "r",  "0.04" ) 
+                                              , ("style", "fill:black") 
+                                              ]
+                                     ) $ return ()
+                    -- left eyeball
+                    elSvgns "circle" (constDyn $ 
+                                     fromList [ ( "cx", "-0.15" )
+                                              , ( "cy", "-0.1" )
+                                              , ( "r",  "0.04" ) 
+                                              , ("style", "fill:black") 
+                                              ]
+                                     ) $ return ()
+                -- smile/frown
                 elSvgns "path" (constDyn $ 
-                                 fromList [ ("d", "M-0.15,0.15 a0.2,0.2 0 0 0 0.30,0.0")
+                                 fromList [ ("d", pack $ "M-0.15,0.15 a0.2,0.2 0 0 " ++ (if lost then "1" else "0") ++ " 0.30,0.0")
                                           , ("stroke", "black") 
                                           , ("stroke-width", "0.02") 
                                           , ("fill", "none") 
