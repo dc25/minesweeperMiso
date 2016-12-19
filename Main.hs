@@ -208,10 +208,10 @@ boardWidget g = do
 
 main :: IO ()
 main = do 
-          g <- getStdGen
-          let (gh:gs) = unfoldr (Just . split) g -- list of generators
-          mainWidget $ do               
-              rEv <- el "div" $ button "Reset"
-              bEv <- zipListWithEvent const (fmap boardWidget gs) rEv
-              widgetHold (boardWidget gh) bEv
-              return ()
+    g <- getStdGen
+    let (gh:gs) = unfoldr (Just . split) g -- list of generators
+    mainWidget $ do               
+        rEv <- el "div" $ button "Reset"
+        bEv <- zipListWithEvent const (fmap boardWidget gs) rEv
+        widgetHold (boardWidget gh) bEv
+        return ()
