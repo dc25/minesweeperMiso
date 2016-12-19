@@ -3,11 +3,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 import Reflex
 import Reflex.Dom
-import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR)
+import Control.Monad.Random (RandomGen, Rand, runRand, getStdGen, getRandomR, split)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.State (State, runState, get, put)
 import Data.Map (Map, toList, fromList, elems, insert, (!))
 import Data.Text (Text, pack)
+import Data.List (unfoldr)
 
 import Pos
 import Svg
@@ -192,22 +193,25 @@ boardAttrs = fromList
 gameOver :: Board -> Bool
 gameOver = any (\cell -> exposed cell && mined cell) 
 
-boardWidget :: MonadWidget t m => m ()
-boardWidget = do
-    gen <- liftIO getStdGen
-    let (initial, _)  = runRand mkBoard gen
+boardWidget :: (RandomGen g) => (MonadWidget t m) => g -> m ()
+boardWidget g = do
+    let (initial, _)  = runRand mkBoard g
     rec 
-        el "div" $ dyn (fmap (\b -> showFace (gameOver b)) cellMap )
+        el "div" $ dyn (fmap (showFace.gameOver) board )
         let pick = switch $ (leftmost . elems) <$> current eventMap
-            pickWithCells = attachPromptlyDynWith (,) cellMap pick
+            pickWithCells = attachPromptlyDynWith (,) board pick
             updateEv = fmap reactToPick pickWithCells
         (_, eventAndCellMap ) <- el "div" $ elSvgns "svg" (constDyn boardAttrs) $ listHoldWithKey initial updateEv showAndReturnCell 
-        let cellMap = fmap (fmap snd) eventAndCellMap
+        let board = fmap (fmap snd) eventAndCellMap
             eventMap = fmap (fmap fst) eventAndCellMap
     return ()
 
 main :: IO ()
-main = mainWidget $ do               
-           rEv <- el "div" $ button "Reset"
-           widgetHold boardWidget $ boardWidget <$ rEv
-           return ()
+main = do 
+          g <- getStdGen
+          let (gh:gs) = unfoldr (Just . split) g -- list of generators
+          mainWidget $ do               
+              rEv <- el "div" $ button "Reset"
+              bEv <- zipListWithEvent const (fmap boardWidget gs) rEv
+              widgetHold (boardWidget gh) bEv
+              return ()
