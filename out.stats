@@ -1,24 +1,24 @@
 code size summary per package:
 
 MonadRandom-0.4.2.3-yU9B6NA07r6NAIYrGhBKP:14910
-base:                    470003
+base:                    470754
 containers-0.5.7.1-9AY76Rzb1QLJmP8p4wSZRz:187017
 deepseq-1.4.2.0-47yvsc92PQF1rYmebWoAXZ:884
 dependent-map-0.2.2.0-Aye7JC6J9Q4ASbo6OrJWec:114868
 dependent-sum-0.3.2.2-7nS29TvovqDNS76jfcaer:12371
-ghc-prim:                40258
+ghc-prim:                39996
 ghcjs-base-0.2.0.0-D8NHjFR0nuJEBIdpJ8312j:16499
 ghcjs-dom-0.2.3.1-L0IRwwiUDix9xezZ47SisT:138081
 ghcjs-prim-0.1.0.0-IFhsWclGfLr1HfhUvIVylA:10712
 integer-gmp:             84307
-main:                    144538
+main:                    146208
 mtl-2.2.2-1GBQj6Qu6nHLR9dkmcpxXI:1865
 prim-uniq-0.1.0.1-Lbg7Imujn019qkjLCx908j:2786
 primitive-0.6.1.0-PBvNfnj6B81wEvI5CBk0H:809
 random-1.1-4yODkowlqmVH67qh6sFaKw:36661
 ref-tf-0.4.0.1-3hM7hnw7bOB1FwMAOCGwpN:1286
-reflex-0.5.0-4dY2MAQRT2h4hcfauhDnW5:1064722
-reflex-dom-0.4-D2yHtMVcsX3FVd3U7yxR5m:581753
+reflex-0.5.0-4dY2MAQRT2h4hcfauhDnW5:1076311
+reflex-dom-0.4-D2yHtMVcsX3FVd3U7yxR5m:581775
 text-1.2.2.1-6Pphv4bz3hHEAngNHxPNZe:515
 these-0.7.1-Jw1YCr04InZ1c0BLK9t9qc:2986
 time-1.6.0.1-Lja9T8bqIudL0xdsRMOCyg:5866
@@ -45,7 +45,7 @@ base
     Data.List.NonEmpty:                 696
     Data.Maybe:                         2404
     Data.Monoid:                        617
-    Data.OldList:                       1011
+    Data.OldList:                       1762
     Data.Traversable:                   5693
     Data.Tuple:                         559
     Data.Type.Coercion:                 219
@@ -124,7 +124,7 @@ dependent-sum-0.3.2.2-7nS29TvovqDNS76jfcaer
 
 ghc-prim
     GHC.CString:                        4516
-    GHC.Classes:                        30220
+    GHC.Classes:                        29958
     GHC.IntWord64:                      298
     GHC.Tuple:                          2809
     GHC.Types:                          2415
@@ -159,7 +159,7 @@ integer-gmp
 
 main
     Flag:                               9318
-    Main:                               87589
+    Main:                               89259
     Mine:                               9714
     Pos:                                1
     Smiley:                             36084
@@ -184,7 +184,7 @@ ref-tf-0.4.0.1-3hM7hnw7bOB1FwMAOCGwpN
 reflex-0.5.0-4dY2MAQRT2h4hcfauhDnW5
     Data.Functor.Misc:                  14274
     Data.WeakBag:                       1556
-    Reflex.Class:                       42140
+    Reflex.Class:                       53729
     Reflex.Dynamic:                     5057
     Reflex.Host.Class:                  3156
     Reflex.Patch:                       6744
@@ -203,7 +203,7 @@ reflex-dom-0.4-D2yHtMVcsX3FVd3U7yxR5m
     Reflex.Dom.Builder.Class:           21759
     Reflex.Dom.Builder.Class.Events:    139277
     Reflex.Dom.Builder.Immediate:       330392
-    Reflex.Dom.Internal:                26622
+    Reflex.Dom.Internal:                26644
     Reflex.Dom.Old:                     1269
     Reflex.Dom.Widget.Basic:            31367
 
@@ -226,5 +226,5 @@ transformers-0.5.2.0-Lvs3wlJMkpyLRFNHJ8pmeB
 
 
 
-packed metadata: 620715
+packed metadata: 622525
 
