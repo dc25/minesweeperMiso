@@ -178,19 +178,19 @@ boardAttrs :: Map Text Text
 boardAttrs = fromList 
                  [ ("width" , pack $ show $ w * cellSize)
                  , ("height", pack $ show $ h * cellSize)
-                 , ("style" , "border:solid; margin:8em")
+                 , ("style" , "border:solid")
                  , ("oncontextmenu", "return false;")
                  ]
 
 gameOver :: Board -> Bool
 gameOver = any (\cell -> exposed cell && mined cell) 
 
-main :: IO ()
-main = mainWidget $ do
+boardWidget :: MonadWidget t m => m ()
+boardWidget = do
     gen <- liftIO getStdGen
     let (initial, _)  = runRand mkBoard gen
     rec 
-        dyn (fmap (\b -> showFace (gameOver b)) cellMap )
+        el "div" $ dyn (fmap (\b -> showFace (gameOver b)) cellMap )
         let pick = switch $ (leftmost . elems) <$> current eventMap
             pickWithCells = attachPromptlyDynWith (,) cellMap pick
             updateEv = fmap reactToPick pickWithCells
@@ -198,3 +198,9 @@ main = mainWidget $ do
         let cellMap = fmap (fmap snd) eventAndCellMap
             eventMap = fmap (fmap fst) eventAndCellMap
     return ()
+
+main :: IO ()
+main = mainWidget $ do               
+           rEv <- el "div" $ button "Reset"
+           widgetHold boardWidget $ boardWidget <$ rEv
+           return ()
