@@ -50,7 +50,7 @@ showFace lost = do
                                           ]
                                  ) $ return ()
 
-                if lost then do
+                if lost then 
                     -- eye crosses
                     fmap head 
                         (forM [ (ex, dx, dy)::(Float, Float, Float) 
