@@ -201,7 +201,7 @@ boardWidget = do
         let pick = switch $ (leftmost . elems) <$> current eventMap
             pickWithCells = attachPromptlyDynWith (,) cellMap pick
             updateEv = fmap reactToPick pickWithCells
-        (_, eventAndCellMap ) <- elSvgns "svg" (constDyn boardAttrs) $ listHoldWithKey initial updateEv showAndReturnCell 
+        (_, eventAndCellMap ) <- el "div" $ elSvgns "svg" (constDyn boardAttrs) $ listHoldWithKey initial updateEv showAndReturnCell 
         let cellMap = fmap (fmap snd) eventAndCellMap
             eventMap = fmap (fmap fst) eventAndCellMap
     return ()
