@@ -62,15 +62,22 @@ cellAttrs cell =
              , ( "oncontextmenu", "return false;")
              ]
 
-textAttrs :: Map Text Text
-textAttrs = 
-    fromList [ ("x",             "0.5")
-             , ("y",             "0.87")
-             , ("font-size",     "1.0" )
-             , ("fill",          "blue" )
-             , ("text-anchor",        "middle" )
-             , ("oncontextmenu",      "return false;")
-             ] 
+textAttrs :: Int -> Map Text Text
+textAttrs count = 
+    let textColor :: Text = case count of
+                                1 -> "blue"
+                                2 -> "green"
+                                3 -> "red"
+                                4 -> "brown"
+                                _ -> "purple"
+
+    in fromList [ ("x",             "0.5")
+                , ("y",             "0.87")
+                , ("font-size",     "1.0" )
+                , ("fill",          textColor )
+                , ("text-anchor",   "middle" )
+                , ("oncontextmenu", "return false;")
+                ] 
 
 groupAttrs :: Pos -> Map Text Text
 groupAttrs (x,y) = 
@@ -87,7 +94,7 @@ showSquare cell = do
 
 showText :: MonadWidget t m => Int -> m [El t]
 showText count = do
-    elSvgns "text" (constDyn textAttrs) $ text $ pack $ show count
+    elSvgns "text" (constDyn $ textAttrs count) $ text $ pack $ show count
     return []
 
 showCellDetail :: MonadWidget t m => Pos -> Cell -> m [El t]
