@@ -193,15 +193,24 @@ boardAttrs = fromList
 gameOver :: Board -> Bool
 gameOver = any (\cell -> exposed cell && mined cell) 
 
+centerStyle = fromList [ ("style", "width: 75%; margin: 0 auto;text-align:center;") ]
+
 boardWidget :: (RandomGen g) => (MonadWidget t m) => g -> m ()
 boardWidget g = do
     let (initial, _)  = runRand mkBoard g
     rec 
-        el "div" $ dyn (fmap (showFace.gameOver) board )
+        elAttr "div" centerStyle $ 
+            dyn (fmap (showFace.gameOver) board )
+
         let pick = switch $ (leftmost . elems) <$> current eventMap
             pickWithCells = attachPromptlyDynWith (,) board pick
             updateEv = fmap reactToPick pickWithCells
-        (_, eventAndCellMap ) <- el "div" $ elSvgns "svg" (constDyn boardAttrs) $ listHoldWithKey initial updateEv showAndReturnCell 
+
+        (_, eventAndCellMap ) <- 
+            elAttr "div" centerStyle $ 
+                elSvgns "svg" (constDyn boardAttrs) $ 
+                    listHoldWithKey initial updateEv showAndReturnCell 
+
         let board = fmap (fmap snd) eventAndCellMap
             eventMap = fmap (fmap fst) eventAndCellMap
     return ()
@@ -210,8 +219,8 @@ main :: IO ()
 main = do 
     g <- getStdGen
     let (gh:gs) = unfoldr (Just . split) g -- list of generators
-    mainWidget $ do               
-        rEv <- el "div" $ button "Reset"
+    mainWidget $ do
+        rEv <- elAttr "div" centerStyle $ button "Reset"
         bEv <- zipListWithEvent const (fmap boardWidget gs) rEv
         widgetHold (boardWidget gh) bEv
         return ()
