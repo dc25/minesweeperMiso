@@ -14,7 +14,6 @@ showFlag pos = do
     let flagAttrs = 
             fromList [ ( "points", "0.20,0.40 0.70,0.55 0.70,0.25" )
                      , ( "style",        "fill:red")
-                     , ("oncontextmenu", "return false;")
                      ] 
 
     (fEl,_) <- elSvgns "polygon" (constDyn flagAttrs ) $ return ()
@@ -26,7 +25,6 @@ showFlag pos = do
                      , ( "y2", "0.85" )
                      , ( "stroke-width", ".07")
                      , ( "stroke", "black")
-                     , ("oncontextmenu", "return false;")
                      ] 
 
     (pEl,_) <- elSvgns "line" (constDyn poleAttrs ) $ return ()

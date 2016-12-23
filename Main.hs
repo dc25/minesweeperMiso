@@ -60,7 +60,6 @@ cellAttrs cell =
              , ( "width",        "0.9")
              , ( "height",       "0.9")
              , ( "style",        pack $ "fill:" ++ getColor cell)
-             , ( "oncontextmenu", "return false;")
              ]
 
 textAttrs :: Int -> Map Text Text
@@ -77,7 +76,6 @@ textAttrs count =
                 , ("font-size",     "1.0" )
                 , ("fill",          textColor )
                 , ("text-anchor",   "middle" )
-                , ("oncontextmenu", "return false;")
                 ] 
 
 groupAttrs :: Pos -> Map Text Text
@@ -187,7 +185,6 @@ boardAttrs = fromList
                  [ ("width" , pack $ show $ w * cellSize)
                  , ("height", pack $ show $ h * cellSize)
                  , ("style" , "border:solid")
-                 , ("oncontextmenu", "return false;")
                  ]
 
 gameOver :: Board -> Bool
@@ -220,7 +217,8 @@ main = do
     g <- getStdGen
     let (gh:gs) = unfoldr (Just . split) g -- list of generators
     mainWidget $ do
-        rEv <- elAttr "div" centerStyle $ button "Reset"
-        bEv <- zipListWithEvent const (fmap boardWidget gs) rEv
-        widgetHold (boardWidget gh) bEv
+        rec -- 'rec' only here to get reset below board
+            bEv <- zipListWithEvent const (fmap boardWidget gs) rEv
+            widgetHold (boardWidget gh) bEv
+            rEv <- elAttr "div" centerStyle $ button "Reset"
         return ()
