@@ -161,10 +161,10 @@ exposeCells pos = do
 
     return $ exposedSelection ++ concat exposedNeighbors ++ exposedMines
 
-fromPick :: Msg -> State Board [(Pos, Maybe Cell)]
-fromPick (LeftPick pos) = exposeCells pos
+update :: Msg -> State Board [(Pos, Maybe Cell)]
+update (LeftPick pos) = exposeCells pos
 
-fromPick (RightPick pos ) = do
+update (RightPick pos ) = do
     board <- get
     let cell = board ! pos
         modifications = if exposed cell 
@@ -177,7 +177,7 @@ reactToPick :: (Board,Msg) -> Map Pos (Maybe Cell)
 reactToPick (b,msg) = 
     if gameOver b -- consolidating gameOver calls didn't affect perf.
     then mempty
-    else let (resultList,_) = runState (fromPick msg) b
+    else let (resultList,_) = runState (update msg) b
          in fromList resultList
 
 boardAttrs :: Map Text Text
