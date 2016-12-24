@@ -53,14 +53,19 @@ mkBoard = do
 getColor :: Cell -> String
 getColor (Cell _ exposed _ _) = if exposed then "#909090" else "#AAAAAA"
 
-cellAttrs :: Cell -> Map Text Text
-cellAttrs cell =
+squareAttrs :: Cell -> Map Text Text
+squareAttrs cell =
     fromList [ ( "x",            "0.05")
              , ( "y",            "0.05")
              , ( "width",        "0.9")
              , ( "height",       "0.9")
              , ( "style",        pack $ "fill:" ++ getColor cell)
              ]
+
+showSquare :: MonadWidget t m => Cell -> m [El t]
+showSquare cell = do
+    (rEl,_) <- elSvgns "rect" (constDyn $ squareAttrs cell) $ return ()
+    return [rEl]
 
 textAttrs :: Int -> Map Text Text
 textAttrs count = 
@@ -77,19 +82,6 @@ textAttrs count =
                 , ("fill",          textColor )
                 , ("text-anchor",   "middle" )
                 ] 
-
-groupAttrs :: Pos -> Map Text Text
-groupAttrs (x,y) = 
-    fromList [ ("transform", 
-                pack $    "scale (" ++ show cellSize ++ ", " ++ show cellSize ++ ") " 
-                       ++ "translate (" ++ show x ++ ", " ++ show y ++ ")" 
-               )
-             ] 
-
-showSquare :: MonadWidget t m => Cell -> m [El t]
-showSquare cell = do
-    (rEl,_) <- elSvgns "rect" (constDyn $ cellAttrs cell) $ return ()
-    return [rEl]
 
 showText :: MonadWidget t m => Int -> m [El t]
 showText count = do
@@ -109,6 +101,14 @@ mouseEv pos el =
     let r_rEv = RightPick pos <$ domEvent Contextmenu el
         l_rEv = LeftPick  pos <$ domEvent Click       el
     in [l_rEv, r_rEv]
+
+groupAttrs :: Pos -> Map Text Text
+groupAttrs (x,y) = 
+    fromList [ ("transform", 
+                pack $    "scale (" ++ show cellSize ++ ", " ++ show cellSize ++ ") " 
+                       ++ "translate (" ++ show x ++ ", " ++ show y ++ ")" 
+               )
+             ] 
 
 showCell :: MonadWidget t m => Pos -> Cell -> m (Event t Msg)
 showCell pos cell = 
