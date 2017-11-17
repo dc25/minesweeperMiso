@@ -11,8 +11,8 @@ base:                    488438
 ghc-prim:                37919
 ghcjs_7HDZUYLWu6O9tXZr0Fsvpn:19219
 integer-gmp:             43950
-main:                    71382
-miso_0xdQDDjxQUTLV8QQeYtitu:99965
+main:                    72830
+miso_0xdQDDjxQUTLV8QQeYtitu:99979
 mtl_CckdaCYdd9aDpmVp4fMiiy:1532
 rando_IrfIqcfdxov1TzSLSdLN7B:47104
 scien_4m62Psf9729KUEAP4gkY8C:4919
@@ -127,9 +127,9 @@ integer-gmp
 
 main
     Flag:                               4509
-    Main:                               57526
+    Main:                               58908
     Mine:                               3285
-    Msg:                                494
+    Msg:                                560
     Pos:                                1
     RightClick:                         631
     Smiley:                             4936
@@ -143,7 +143,7 @@ miso_0xdQDDjxQUTLV8QQeYtitu
     Miso.FFI:                           10622
     Miso.Html.Element:                  1754
     Miso.Html.Event:                    960
-    Miso.Html.Internal:                 26147
+    Miso.Html.Internal:                 26161
     Miso.Html.Property:                 1346
     Miso.String:                        456
     Miso.Svg.Attribute:                 11393
@@ -173,5 +173,5 @@ vecto_DY6msUvqg3iJ5Ak1gSL0h2
 
 
 
-packed metadata: 225460
+packed metadata: 225828
 
