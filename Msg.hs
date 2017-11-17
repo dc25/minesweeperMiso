@@ -4,6 +4,6 @@ import Control.Monad.Random (StdGen)
 
 import Pos
 
-data Msg = LeftPick Pos | RightPick Pos | Reset | Id
+data Msg = LeftPick Pos | RightPick Pos | Reset | Reset2 | Id
 
 

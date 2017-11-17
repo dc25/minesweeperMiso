@@ -1,12 +1,6 @@
--- {-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards            #-}
-
-
-
--- {-# LANGUAGE TypeFamilies               #-}
--- {-# LANGUAGE TypeOperators              #-}
 
 import System.Random
 import Control.Monad.Random (StdGen, RandomGen, Rand, runRand, getStdGen, getRandom, getRandomR, split)
@@ -38,10 +32,10 @@ type Board = Map Pos Cell
 type Game = (Board, Int)
 
 w :: Int
-w =  32
+w =  5
 
 h :: Int
-h = 16
+h = 3
 
 cellSize :: Int
 cellSize = 20
@@ -64,22 +58,13 @@ mkBoard = do
 getColor :: Cell -> String
 getColor (Cell _ exposed _ _) = if exposed then "#909090" else "#AAAAAA"
 
-squareAttrs :: Cell -> Map Text Text
-squareAttrs cell =
-    fromList [ ( "x",            "0.05")
-             , ( "y",            "0.05")
-             , ( "width",        "0.9")
-             , ( "height",       "0.9")
-             -- , ( "style",        pack $ "fill:" ++ getColor cell)
-             ]
-
 showSquare :: Pos -> Cell -> View Msg
 showSquare (xCoord, yCoord) cell = 
           rect_ [ x_ "0.05"
                , y_ "0.05"
                , width_ "0.9" 
                , height_ "0.9" 
-               -- , style_ ("fill:" ++ getColor cell)
+               , style_ $ fromList [("fill", ms $ getColor cell)]
                , onClick (LeftPick (xCoord, yCoord))
                , onRightClick (RightPick (xCoord, yCoord))
                ] 
@@ -195,7 +180,7 @@ gameOver = any (\cell -> exposed cell && mined cell)
 centerStyle :: Map MisoString MisoString
 centerStyle = fromList [ ("width", "75%")
                        , ("margin", "0 auto")
-                       , ("text-align", "center;") 
+                       , ("text-align", "center") 
                        ]
 
 viewGame :: Game -> View Msg
