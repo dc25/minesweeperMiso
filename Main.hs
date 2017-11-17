@@ -198,8 +198,8 @@ centerStyle = fromList [ ("width", "75%")
                        , ("text-align", "center;") 
                        ]
 
-view :: Game -> View Msg
-view (board,_) = 
+viewGame :: Game -> View Msg
+viewGame (board,_) = 
     div_ []
     (   [div_ [style_ centerStyle] (showFace (gameOver board) )
         ,div_ [style_ centerStyle] [ svg_ [ version_ "1.1"
@@ -229,7 +229,7 @@ main = do
     initialAction = Reset
     model         = (mempty, seed)
     update        = updateGame
-    view          = view
+    view          = viewGame
     events        = defaultEvents
     subs          = [ ]
   startApp App {..}
