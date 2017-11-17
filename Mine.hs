@@ -1,33 +1,35 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+
 module Mine (showMine) where
 
-import Reflex
-import Reflex.Dom
+import           Miso
+import           Miso.String        (MisoString, pack, ms)
+import           Miso.Svg           hiding (height_, id_, style_, width_)
+
+import RightClick
+
+
 import Data.Map (fromList)
 
-import Svg
 import Pos
+import Msg
 
-showMine :: MonadWidget t m => Pos -> m [El t]
-showMine pos = do
-    let mineAttrs = 
-            fromList [ ( "cx", "0.45" )
-                     , ( "cy", "0.55" )
-                     , ( "r",  "0.3" )
-                     , ( "style",        "fill:brown")
-                     , ("oncontextmenu", "return false;")
-                     ] 
+showMine :: Pos -> [View Msg]
+showMine pos = 
+    [ polygon_ [ points_ "0.65,0.15 0.85,0.35 0.65,0.55 0.45,0.35 " 
+               , fill_   "brown"
+               ]
+               [
+               ]
 
-    (cEl,_) <- elSvgns "circle" (constDyn mineAttrs ) $ return ()
-
-    let stemAttrs = 
-            fromList [ ( "points", "0.65,0.15 0.85,0.35 0.65,0.55 0.45,0.35 " )
-                     , ( "style",        "fill:brown")
-                     , ("oncontextmenu", "return false;")
-                     ] 
-
-    (sEl,_) <- elSvgns "polygon" (constDyn stemAttrs ) $ return ()
-    (fEl,_) <- elSvgns "circle" (constDyn mineAttrs ) $ return ()
-
-    return [cEl, sEl]
+    , circle_ [ cx_ "0.45" 
+              , cy_ "0.55"
+              , r_  "0.3"
+              , fill_ "brown"
+              , onClick (LeftPick pos)
+              , onRightClick (RightPick pos)
+             ] 
+             [
+             ]
+    ]

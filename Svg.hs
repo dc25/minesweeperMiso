@@ -3,8 +3,6 @@
 
 module Svg ( elSvgns, svgEl ) where
 
-import Reflex
-import Reflex.Dom
 import Data.Map (Map)
 import Data.Text (Text)
 
