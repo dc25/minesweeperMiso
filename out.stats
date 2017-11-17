@@ -3,22 +3,22 @@ code size summary per package:
 9VDSJP6qJpBEhespxMC3DM:  5743
 AHOOhHjGLItBYmDB2lAxxO:  826
 DfpZFnZR7Sa7Y07uHwVn10:  10227
-KQpEOkJjX9qJTwsO87bqLg:  116696
+KQpEOkJjX9qJTwsO87bqLg:  137684
 Kf2mIYnZNzX8FVHpQOsI2V:  9806
 Monad_JvspcH25Fc9JblSVrG4wJ3:13472
 aeson_D4zMF1P1ZpsKMgz9HPiZU6:20876
-base:                    487133
+base:                    488438
 ghc-prim:                37919
-ghcjs_7HDZUYLWu6O9tXZr0Fsvpn:14713
+ghcjs_7HDZUYLWu6O9tXZr0Fsvpn:19219
 integer-gmp:             43950
-main:                    53296
-miso_0xdQDDjxQUTLV8QQeYtitu:87437
+main:                    71382
+miso_0xdQDDjxQUTLV8QQeYtitu:99965
 mtl_CckdaCYdd9aDpmVp4fMiiy:1532
 rando_IrfIqcfdxov1TzSLSdLN7B:47104
-scien_4m62Psf9729KUEAP4gkY8C:4872
-text_DfPPBlezQfj0WJcyB3QXey:1943
-unord_34NWiEgrMCw8NUnSnAxkhV:3805
-vecto_DY6msUvqg3iJ5Ak1gSL0h2:2027
+scien_4m62Psf9729KUEAP4gkY8C:4919
+text_DfPPBlezQfj0WJcyB3QXey:1951
+unord_34NWiEgrMCw8NUnSnAxkhV:3821
+vecto_DY6msUvqg3iJ5Ak1gSL0h2:2041
 
 
 code size per module:
@@ -35,7 +35,7 @@ DfpZFnZR7Sa7Y07uHwVn10
     GHCJS.Prim.Internal:                4427
 
 KQpEOkJjX9qJTwsO87bqLg
-    Data.Map.Base:                      79629
+    Data.Map.Base:                      100617
     Data.Sequence:                      37067
 
 Kf2mIYnZNzX8FVHpQOsI2V
@@ -53,10 +53,12 @@ base
     Control.Exception.Base:             5490
     Data.Either:                        397
     Data.Fixed:                         2041
-    Data.Foldable:                      4160
+    Data.Foldable:                      4636
     Data.Functor.Identity:              1125
     Data.Maybe:                         722
+    Data.Monoid:                        662
     Data.Traversable:                   3791
+    Data.Tuple:                         167
     Data.Typeable:                      885
     Data.Typeable.Internal:             1418
     Foreign.C.Error:                    9812
@@ -110,7 +112,7 @@ ghc-prim
     GHC.Types:                          1377
 
 ghcjs_7HDZUYLWu6O9tXZr0Fsvpn
-    Data.JSString:                      4664
+    Data.JSString:                      9170
     Data.JSString.Internal.Type:        242
     GHCJS.Foreign.Internal:             366
     GHCJS.Internal.Types:               231
@@ -125,7 +127,7 @@ integer-gmp
 
 main
     Flag:                               4509
-    Main:                               39440
+    Main:                               57526
     Mine:                               3285
     Msg:                                494
     Pos:                                1
@@ -133,17 +135,19 @@ main
     Smiley:                             4936
 
 miso_0xdQDDjxQUTLV8QQeYtitu
-    Miso:                               16614
-    Miso.Delegate:                      1039
+    Miso:                               16751
+    Miso.Delegate:                      1049
     Miso.Effect:                        487
     Miso.Event.Decoder:                 912
-    Miso.Event.Types:                   21663
-    Miso.FFI:                           10527
-    Miso.Html.Event:                    956
-    Miso.Html.Internal:                 21259
+    Miso.Event.Types:                   21753
+    Miso.FFI:                           10622
+    Miso.Html.Element:                  1754
+    Miso.Html.Event:                    960
+    Miso.Html.Internal:                 26147
     Miso.Html.Property:                 1346
-    Miso.Svg.Attribute:                 8023
-    Miso.Svg.Element:                   4318
+    Miso.String:                        456
+    Miso.Svg.Attribute:                 11393
+    Miso.Svg.Element:                   6042
     Miso.Types:                         293
 
 mtl_CckdaCYdd9aDpmVp4fMiiy
@@ -153,21 +157,21 @@ rando_IrfIqcfdxov1TzSLSdLN7B
     System.Random:                      47104
 
 scien_4m62Psf9729KUEAP4gkY8C
-    Data.Scientific:                    4872
+    Data.Scientific:                    4919
 
 text_DfPPBlezQfj0WJcyB3QXey
     Data.Text.Array:                    697
-    Data.Text.Internal:                 1246
+    Data.Text.Internal:                 1254
 
 unord_34NWiEgrMCw8NUnSnAxkhV
     Data.HashMap.Array:                 219
-    Data.HashMap.Base:                  3586
+    Data.HashMap.Base:                  3602
 
 vecto_DY6msUvqg3iJ5Ak1gSL0h2
-    Data.Vector:                        873
-    Data.Vector.Mutable:                1154
+    Data.Vector:                        879
+    Data.Vector.Mutable:                1162
 
 
 
-packed metadata: 210112
+packed metadata: 225460
 
