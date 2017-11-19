@@ -1,19 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE RecordWildCards #-}
 
 import System.Random
-import Control.Monad.Random (StdGen, RandomGen, Rand, runRand, getStdGen, getRandom, getRandomR, split)
-import Control.Monad.Trans (liftIO)
+import Control.Monad.Random (Rand, runRand, getRandom, getRandomR)
 import Control.Monad.State (State, runState, get, put)
-import Data.Map (Map, mapWithKey, toList, fromList, elems, insert, (!))
-import Data.Text (Text)
-import Data.List (unfoldr)
-import Data.Time ()
+import Data.Map (Map, mapWithKey, toList, fromList, insert, (!))
 
 import           Miso
-import           Miso.String        (MisoString, pack, ms)
-import           Miso.Svg           hiding (height_, id_, style_, width_)
+import           Miso.String  (MisoString, pack, ms)
+import           Miso.Svg     hiding (height_, style_, width_)
 
 import Pos
 import Msg
@@ -32,10 +27,10 @@ type Board = Map Pos Cell
 type Game = (Board, Int)
 
 w :: Int
-w =  5
+w =  40
 
 h :: Int
-h = 3
+h = 30
 
 cellSize :: Int
 cellSize = 20
@@ -47,7 +42,7 @@ mkCell = do
 
 initBoard :: RandomGen g => [Pos] -> Rand g Board
 initBoard positions = do
-    cells <- sequence $ repeat mkCell
+    cells <- sequence $ take (length positions) (repeat mkCell)
     return $ fromList (zip positions cells)
 
 mkBoard :: RandomGen g => Rand g Board
@@ -99,14 +94,6 @@ showCellDetail pos (Cell mined exposed flagged mineCount) =
          (   True,    True,       _,     _) -> showMine pos 
          (      _,    True,       _, False) -> showText pos mineCount
          (      _,       _,       _,     _) -> []
-
-groupAttrs :: Pos -> Map MisoString MisoString
-groupAttrs (x,y) = 
-    fromList [ ("transform", 
-                 ms $ ("scale (" ++ show cellSize ++ ", " ++ show cellSize ++ ") " 
-                       ++ "translate (" ++ show x ++ ", " ++ show y ++ ")" )
-               )
-             ] 
 
 showCell :: Pos -> Cell -> View Msg
 showCell pos cell = 
@@ -167,13 +154,6 @@ updateBoard (RightPick pos ) = do
     put $ foldl (\b (p,Just c) -> insert p c b) board modifications
     return modifications
 
-boardAttrs :: Map MisoString MisoString
-boardAttrs = fromList 
-                 [ ("width" , ms $ show $ w * cellSize)
-                 , ("height", ms $ show $ h * cellSize)
-                 , ("style" , "border:solid")
-                 ]
-
 gameOver :: Board -> Bool
 gameOver = any (\cell -> exposed cell && mined cell) 
 
@@ -209,7 +189,7 @@ updateGame msg (board, seed) =
 
 main :: IO ()
 main = do
-  seed::Int <- getStdRandom random
+  seed <- getStdRandom random
   let
     initialAction = Reset
     model         = (mempty, seed)
@@ -218,4 +198,3 @@ main = do
     events        = defaultEvents
     subs          = [ ]
   startApp App {..}
-
