@@ -7,12 +7,12 @@ KQpEOkJjX9qJTwsO87bqLg:  137684
 Kf2mIYnZNzX8FVHpQOsI2V:  9806
 Monad_JvspcH25Fc9JblSVrG4wJ3:13472
 aeson_D4zMF1P1ZpsKMgz9HPiZU6:20876
-base:                    488438
+base:                    489505
 ghc-prim:                37919
 ghcjs_7HDZUYLWu6O9tXZr0Fsvpn:19219
 integer-gmp:             43950
-main:                    72830
-miso_0xdQDDjxQUTLV8QQeYtitu:99979
+main:                    72796
+miso_0xdQDDjxQUTLV8QQeYtitu:99989
 mtl_CckdaCYdd9aDpmVp4fMiiy:1532
 rando_IrfIqcfdxov1TzSLSdLN7B:47104
 scien_4m62Psf9729KUEAP4gkY8C:4919
@@ -90,7 +90,7 @@ base
     GHC.IO.Handle.Internals:            27136
     GHC.IO.Handle.Types:                3571
     GHC.Int:                            19642
-    GHC.List:                           14346
+    GHC.List:                           15413
     GHC.MVar:                           188
     GHC.Num:                            3347
     GHC.Ptr:                            188
@@ -127,9 +127,9 @@ integer-gmp
 
 main
     Flag:                               4509
-    Main:                               58908
+    Main:                               59002
     Mine:                               3285
-    Msg:                                560
+    Msg:                                432
     Pos:                                1
     RightClick:                         631
     Smiley:                             4936
@@ -143,7 +143,7 @@ miso_0xdQDDjxQUTLV8QQeYtitu
     Miso.FFI:                           10622
     Miso.Html.Element:                  1754
     Miso.Html.Event:                    960
-    Miso.Html.Internal:                 26161
+    Miso.Html.Internal:                 26171
     Miso.Html.Property:                 1346
     Miso.String:                        456
     Miso.Svg.Attribute:                 11393
@@ -173,5 +173,5 @@ vecto_DY6msUvqg3iJ5Ak1gSL0h2
 
 
 
-packed metadata: 225828
+packed metadata: 225995
 
