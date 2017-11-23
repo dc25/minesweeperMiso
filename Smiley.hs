@@ -18,8 +18,7 @@ showFace lost =
                    circle_ [ cx_ "0.0"
                            , cy_ "0.0"
                            , r_  "0.4"
-                           -- , fill_ "yellow"
-                           , style_ "yellow"
+                           , fill_ "yellow"
                            , stroke_ "black"
                            , strokeWidth_ "0.02"
                            ]

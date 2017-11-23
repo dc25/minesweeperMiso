@@ -6,9 +6,9 @@ import Control.Monad.Random (Rand, runRand, getRandom, getRandomR)
 import Control.Monad.State (State, runState, get, put)
 import Data.Map (Map, mapWithKey, toList, fromList, insert, (!))
 
-import           Miso
-import           Miso.String  (MisoString, pack, ms)
-import           Miso.Svg     hiding (height_, style_, width_)
+import Miso
+import Miso.String  (MisoString, pack, ms)
+import Miso.Svg     hiding (height_, style_, width_)
 
 import Pos
 import Msg
@@ -143,16 +143,19 @@ exposeCells pos = do
     return $ exposedSelection ++ concat exposedNeighbors ++ exposedMines
 
 updateBoard :: Msg -> State Board [(Pos, Maybe Cell)]
-updateBoard (LeftPick pos) = exposeCells pos
-
-updateBoard (RightPick pos ) = do
+updateBoard msg = do
     board <- get
-    let cell = board ! pos
-        modifications = if exposed cell 
-                        then [] -- can't flag a cell that's already exposed.  
-                        else [(pos, Just $ cell {flagged=not $ flagged cell})]
-    put $ foldl (\b (p,Just c) -> insert p c b) board modifications
-    return modifications
+    if gameOver board 
+    then return []
+    else case msg of 
+             LeftPick pos -> exposeCells pos
+             RightPick pos -> do
+                 let cell = board ! pos
+                     modifications = if exposed cell 
+                                     then [] -- can't flag a cell that's already exposed.  
+                                     else [(pos, Just $ cell {flagged=not $ flagged cell})]
+                 put $ foldl (\b (p,Just c) -> insert p c b) board modifications
+                 return modifications
 
 gameOver :: Board -> Bool
 gameOver = any (\cell -> exposed cell && mined cell) 
@@ -195,6 +198,6 @@ main = do
     model         = (mempty, seed)
     update        = updateGame
     view          = viewGame
-    events        = defaultEvents
+    events        = Data.Map.insert "contextmenu" False defaultEvents
     subs          = [ ]
   startApp App {..}
