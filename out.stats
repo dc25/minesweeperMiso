@@ -11,10 +11,10 @@ base:                    545273
 ghc-prim:                37919
 ghcjs_7HDZUYLWu6O9tXZr0Fsvpn:19347
 integer-gmp:             43950
-main:                    87199
+main:                    87910
 miso_0xdQDDjxQUTLV8QQeYtitu:103000
 mtl_CckdaCYdd9aDpmVp4fMiiy:1532
-rando_IrfIqcfdxov1TzSLSdLN7B:47474
+rando_IrfIqcfdxov1TzSLSdLN7B:47480
 scien_4m62Psf9729KUEAP4gkY8C:4919
 text_DfPPBlezQfj0WJcyB3QXey:1951
 unord_34NWiEgrMCw8NUnSnAxkhV:3821
@@ -127,7 +127,7 @@ integer-gmp
 
 main
     Flag:                               4509
-    Main:                               59002
+    Main:                               59713
     Mine:                               3285
     Msg:                                432
     Pos:                                1
@@ -154,7 +154,7 @@ mtl_CckdaCYdd9aDpmVp4fMiiy
     Control.Monad.State.Class:          1532
 
 rando_IrfIqcfdxov1TzSLSdLN7B
-    System.Random:                      47474
+    System.Random:                      47480
 
 scien_4m62Psf9729KUEAP4gkY8C
     Data.Scientific:                    4919
@@ -173,5 +173,5 @@ vecto_DY6msUvqg3iJ5Ak1gSL0h2
 
 
 
-packed metadata: 235796
+packed metadata: 235911
 
