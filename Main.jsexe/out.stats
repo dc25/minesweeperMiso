@@ -7,14 +7,14 @@ KQpEOkJjX9qJTwsO87bqLg:  137684
 Kf2mIYnZNzX8FVHpQOsI2V:  9806
 Monad_JvspcH25Fc9JblSVrG4wJ3:13472
 aeson_D4zMF1P1ZpsKMgz9HPiZU6:20937
-base:                    545273
+base:                    544206
 ghc-prim:                37919
 ghcjs_7HDZUYLWu6O9tXZr0Fsvpn:19347
 integer-gmp:             43950
-main:                    87910
+main:                    89501
 miso_0xdQDDjxQUTLV8QQeYtitu:103000
 mtl_CckdaCYdd9aDpmVp4fMiiy:1532
-rando_IrfIqcfdxov1TzSLSdLN7B:47480
+rando_IrfIqcfdxov1TzSLSdLN7B:47466
 scien_4m62Psf9729KUEAP4gkY8C:4919
 text_DfPPBlezQfj0WJcyB3QXey:1951
 unord_34NWiEgrMCw8NUnSnAxkhV:3821
@@ -90,7 +90,7 @@ base
     GHC.IO.Handle.Internals:            27136
     GHC.IO.Handle.Types:                3571
     GHC.Int:                            19642
-    GHC.List:                           18107
+    GHC.List:                           17040
     GHC.MVar:                           188
     GHC.Num:                            3347
     GHC.Ptr:                            188
@@ -126,8 +126,9 @@ integer-gmp
     GHC.Integer.Type:                   43617
 
 main
+    Board:                              36137
     Flag:                               4509
-    Main:                               59713
+    Main:                               25167
     Mine:                               3285
     Msg:                                432
     Pos:                                1
@@ -154,7 +155,7 @@ mtl_CckdaCYdd9aDpmVp4fMiiy
     Control.Monad.State.Class:          1532
 
 rando_IrfIqcfdxov1TzSLSdLN7B
-    System.Random:                      47480
+    System.Random:                      47466
 
 scien_4m62Psf9729KUEAP4gkY8C
     Data.Scientific:                    4919
@@ -173,5 +174,5 @@ vecto_DY6msUvqg3iJ5Ak1gSL0h2
 
 
 
-packed metadata: 235911
+packed metadata: 236132
 
