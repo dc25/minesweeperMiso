@@ -26,7 +26,7 @@ showFace lost =
                            ]
                   ]
                   ++ -- eyes
-                    (fmap (\xc ->
+                    fmap (\xc ->
                            circle_ [ cx_ (pack $ show xc)
                                    , cy_ "-0.1"
                                    , r_  "0.08"
@@ -37,9 +37,8 @@ showFace lost =
                                    [
                                    ]
                           ) [0.15, -0.15] 
-                    )
                   ++ [ -- smile/frown
-                       path_ [ d_ $ (pack ("M-0.15,0.15 a0.2,0.2 0 0 " ++ (if lost then "1" else "0") ++ " 0.30,0.0"))
+                       path_ [ d_ (pack ("M-0.15,0.15 a0.2,0.2 0 0 " ++ (if lost then "1" else "0") ++ " 0.30,0.0"))
                              , stroke_ "black"
                              , strokeWidth_ "0.02"
                              , fill_ "none"

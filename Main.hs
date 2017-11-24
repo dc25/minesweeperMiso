@@ -73,7 +73,7 @@ showCell pos cell =
     let (x,y) = pos 
     in g_ [ transform_ (ms $ "scale (" ++ show cellSize ++ ", " ++ show cellSize ++ ") " ++ "translate (" ++ show x ++ ", " ++ show y ++ ") " )
           ]
-          ([ showSquare pos cell ] ++ showCellDetail pos cell)
+          ([ showSquare pos cell ] : showCellDetail pos cell)
 
 centerStyle :: Map MisoString MisoString
 centerStyle = fromList [ ("width", "75%")
@@ -84,16 +84,15 @@ centerStyle = fromList [ ("width", "75%")
 viewGame :: Game -> View Msg
 viewGame (board,_) = 
     div_ []
-    (   [div_ [style_ centerStyle] (showFace (gameOver board) )
-        ,div_ [style_ centerStyle] [ svg_ [ version_ "1.1"
-                                          , width_ (ms $ show (w * cellSize))
-                                          , height_ (ms $ show (h * cellSize))
-                                          ]
-                      (map snd (toList (mapWithKey (\p c -> showCell p c) (board))))
-                ]
-        ,div_ [style_ centerStyle] [ button_ [onClick Reset] [text "reset"] ]
-        ]
-    )
+         [div_ [style_ centerStyle] (showFace (gameOver board) )
+         ,div_ [style_ centerStyle] [ svg_ [ version_ "1.1"
+                                           , width_ (ms $ show (w * cellSize))
+                                           , height_ (ms $ show (h * cellSize))
+                                           ]
+                       (map snd (toList (mapWithKey showCell board)))
+                 ]
+         ,div_ [style_ centerStyle] [ button_ [onClick Reset] [text "reset"] ]
+         ]
 
 updateGame :: Msg -> Game -> Effect Msg Game
 updateGame msg (board, seed) = 
