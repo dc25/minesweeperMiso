@@ -65,22 +65,19 @@ showText pos count =
 
 showCellDetail :: Pos -> Cell -> [View Msg]
 showCellDetail pos (Cell mined exposed flagged mineCount) =
-    case (mined, exposed, flagged, 0 == mineCount) of
-        (_, _, True, _) -> showFlag pos
-        (True, True, _, _) -> showMine pos
-        (_, True, _, False) -> showText pos mineCount
-        (_, _, _, _) -> []
+    case ( flagged,    mined, exposed, 0 /= mineCount) of
+         (    True,       _,       _,       _) -> showFlag pos
+         (       _,    True,    True,       _) -> showMine pos
+         (       _,       _,    True,    True) -> showText pos mineCount
+         (       _,       _,       _,       _) -> []
 
 showCell :: Pos -> Cell -> View Msg
 showCell pos cell =
     let (x, y) = pos
+        scale = show cellSize
     in g_ [ transform_
-                (ms $
-                 "scale (" ++
-                 show cellSize ++
-                 ", " ++
-                 show cellSize ++
-                 ") " ++ "translate (" ++ show x ++ ", " ++ show y ++ ") ")
+                (ms $    "scale (" ++ scale ++ ", " ++ scale ++ ") " 
+                      ++ "translate (" ++ show x ++ ", " ++ show y ++ ") ")
            ]
            (showSquare pos cell : showCellDetail pos cell)
 
