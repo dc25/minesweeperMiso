@@ -73,7 +73,7 @@ showCell pos cell =
     let (x,y) = pos 
     in g_ [ transform_ (ms $ "scale (" ++ show cellSize ++ ", " ++ show cellSize ++ ") " ++ "translate (" ++ show x ++ ", " ++ show y ++ ") " )
           ]
-          ([ showSquare pos cell ] : showCellDetail pos cell)
+          (showSquare pos cell : showCellDetail pos cell)
 
 centerStyle :: Map MisoString MisoString
 centerStyle = fromList [ ("width", "75%")
