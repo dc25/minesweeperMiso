@@ -28,7 +28,7 @@ mkCell = do
 
 initBoard :: RandomGen g => [Pos] -> Rand g Board
 initBoard positions = do
-    cells <- sequence $ repeat mkCell
+    cells <- sequence $ take (length positions) (repeat mkCell)
     return $ fromList (zip positions cells)
 
 mkBoard :: RandomGen g => Rand g Board
