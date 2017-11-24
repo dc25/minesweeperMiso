@@ -75,6 +75,16 @@ exposeCells pos = do
 
     return $ exposedSelection ++ concat exposedNeighbors ++ exposedMines
 
+flagCell :: Pos -> State Board [(Pos, Maybe Cell)]
+flagCell pos = do
+                 board <- get
+                 let cell = board ! pos
+                     modifications = if exposed cell
+                                     then [] -- can't flag a cell that's already exposed.  
+                                     else [(pos, Just $ cell {flagged=not $ flagged cell})]
+                 put $ foldl (\b (p,Just c) -> insert p c b) board modifications
+                 return modifications
+
 gameOver :: Board -> Bool
 gameOver = any (\cell -> exposed cell && mined cell) 
 
@@ -85,11 +95,5 @@ updateBoard msg = do
     then return []
     else case msg of
              LeftPick pos -> exposeCells pos
-             RightPick pos -> do
-                 let cell = board ! pos
-                     modifications = if exposed cell
-                                     then [] -- can't flag a cell that's already exposed.  
-                                     else [(pos, Just $ cell {flagged=not $ flagged cell})]
-                 put $ foldl (\b (p,Just c) -> insert p c b) board modifications
-                 return modifications
+             RightPick pos -> flagCell pos
 
