@@ -1,3 +1,3 @@
-module Pos where 
+module Pos where
 
 type Pos = (Int, Int)

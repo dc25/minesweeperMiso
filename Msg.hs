@@ -1,7 +1,10 @@
-module Msg where 
+module Msg where
 
 import Control.Monad.Random (StdGen)
 
 import Pos
 
-data Msg = LeftPick Pos | RightPick Pos | Reset 
+data Msg
+    = LeftPick Pos
+    | RightPick Pos
+    | Reset
