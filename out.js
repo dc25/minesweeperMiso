@@ -41471,7 +41471,7 @@ function h$$TY()
   switch (a)
   {
     case (1):
-      var b = h$ustra("cyan");
+      var b = h$ustra("blue");
       h$l2(b, h$ghcjszu7HDZZUYLWu6O9tXZZr0FsvpnZCDataziJSStringzizdfIsStringJSString);
       return h$ap_1_1_fast();
     case (2):
@@ -41703,7 +41703,7 @@ function h$$TE()
   }
   else
   {
-    h$r1 = h$ustra("#AAAAAA");
+    h$r1 = h$ustra("#CCCCCC");
   };
   return h$stack[h$sp];
 };
