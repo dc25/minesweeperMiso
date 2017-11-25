@@ -15,10 +15,10 @@ import Msg
 import Pos
 
 w :: Int
-w = 32
+w = 40
 
 h :: Int
-h = 16
+h = 30
 
 data Cell = Cell
     { mined :: Bool
