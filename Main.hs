@@ -90,6 +90,7 @@ viewGame (board, _) =
     div_
         []
         [ div_ [style_ centerStyle] (showFace (gameOver board))
+        , div_ [style_ centerStyle] [text "Implemented using Miso"]
         , div_
               [style_ centerStyle]
               [ svg_
