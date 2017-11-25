@@ -27,7 +27,7 @@ getColor :: Cell -> String
 getColor (Cell _ exposed _ _) =
     if exposed
         then "#909090"
-        else "#AAAAAA"
+        else "#CCCCCC"
 
 showSquare :: Pos -> Cell -> View Msg
 showSquare (xCoord, yCoord) cell =
@@ -46,7 +46,7 @@ showText :: Pos -> Int -> [View Msg]
 showText pos count =
     let textColor =
             case count of
-                1 -> "cyan"
+                1 -> "blue"
                 2 -> "green"
                 3 -> "red"
                 4 -> "brown"
