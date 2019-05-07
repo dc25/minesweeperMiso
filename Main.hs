@@ -124,4 +124,5 @@ main = do
         view = viewGame
         events = Data.Map.insert "contextmenu" False defaultEvents
         subs = []
+        mountPoint = Nothing
     startApp App {..}
