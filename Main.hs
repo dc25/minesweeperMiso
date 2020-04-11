@@ -6,7 +6,7 @@ import Control.Monad.State (State, get, put, runState)
 import Data.Map (Map, (!), fromList, insert, mapWithKey, toList)
 import System.Random
 
-import Miso
+import Miso (width_, height_, div_, style_, button_, text, startApp, defaultEvents, noEff, Effect, App(..), View)
 import Miso.String (MisoString, ms, pack)
 import Miso.Svg hiding (height_, style_, width_)
 
